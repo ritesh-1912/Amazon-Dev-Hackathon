@@ -1,8 +1,8 @@
 # Campus Ops MCP
 
-> A stateful Model Context Protocol (MCP) server + simulated Alexa+ experience that manages a student's academic "ops" (assignments, fees, project milestones, library returns) — tracking task dependencies, refusing to advance blocked items, and requiring explicit human confirmation before mutating real-world state.
+> A stateful Model Context Protocol (MCP) server and simulated Alexa+ interface for academic operations (assignments, tuition fees, project milestones, library returns). Tracks task dependencies, enforces invariants on blocked items, and requires explicit confirmation before mutating real-world state.
 
-Built for the **Amazon Developer Hackathon 2026** (Alexa+ track — simulated experience path + AWS Builder mini-challenge with AWS Bedrock).
+Built for the **Amazon Developer Hackathon 2026** (Alexa+ track: simulated experience path; AWS Builder mini-challenge: AWS Bedrock).
 
 ---
 
@@ -15,13 +15,13 @@ Built for the **Amazon Developer Hackathon 2026** (Alexa+ track — simulated ex
 
 ## Problem Statement
 
-Students juggle complex, high-stakes deadlines across disjointed university portals: course assignments on Canvas/Blackboard, tuition payments on Bursar systems, capstone deliverables on GitHub, and library book loans. 
+Students manage deadlines across university systems: course assignments, tuition payments, project milestones, and library loans.
 
-When autonomous agents or assistants interact with these systems without constraints, two major failure modes occur:
-1. **Premature Action on Blocked Dependencies**: An agent attempts to submit or advance a deliverable whose prerequisites are incomplete (e.g. submitting capstone milestone code before the architecture specification is completed and approved).
-2. **Unguarded Real-World Mutations**: An agent autonomously performs irreversible or financial actions (e.g. marking tuition fees as paid or submitting final projects) without explicit student verification.
+When autonomous assistants interact with these systems without constraints, two failure modes occur:
+1. **Premature Action on Blocked Dependencies**: An assistant attempts to advance a task whose prerequisites are incomplete (such as submitting milestone deliverables before prerequisite design approval).
+2. **Unguarded Real-World Mutations**: An assistant executes irreversible or financial actions (such as marking tuition fees as paid or submitting final work) without human verification.
 
-**Campus Ops MCP** solves this by combining stateful dependency graph tracking, invariant status calculation, human-in-the-loop confirmation gates, and conversational AI briefing powered by AWS Bedrock.
+Campus Ops MCP addresses these failures by enforcing dependency graph invariants, requiring explicit confirmation before state mutations, and providing operational briefings via AWS Bedrock.
 
 ---
 
@@ -79,14 +79,14 @@ When autonomous agents or assistants interact with these systems without constra
 
 ## How AWS Bedrock Is Used (AWS Builder Challenge)
 
-Campus Ops MCP integrates **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
+Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
 
 ### Workflow:
-1. When the student asks *"What's due this week?"* or invokes the `get_smart_brief` tool, the server aggregates the weekly schedule (tasks due in 7 days, currently blocked tasks and their blockers, and overdue items).
-2. The structured JSON graph is sent to Claude on Bedrock with a calm operational assistant persona.
-3. Claude synthesizes the data into a calm, concise 3-4 sentence spoken brief: what is due soon, what is blocked and why, and what requires student confirmation.
-4. **Graceful Fallback**: If AWS credentials are not configured or rate limits are reached, the engine automatically falls back to a deterministic structured summary without server interruption.
-5. See [`docs/aws-builder.md`](docs/aws-builder.md) for full architectural documentation of the AWS Bedrock integration.
+1. When querying upcoming work or invoking `get_smart_brief`, the server aggregates the schedule: tasks due within 7 days, currently blocked tasks with blocker IDs, and overdue items.
+2. The structured JSON graph is sent to Claude on Bedrock.
+3. Claude synthesizes the data into a 3-4 sentence operational brief detailing pending deadlines, blockers, and items requiring confirmation.
+4. **Fallback Handling**: If AWS credentials are not configured or rate limits are reached, the engine falls back to a deterministic structured summary without interruption.
+5. See [`docs/aws-builder.md`](docs/aws-builder.md) for architecture documentation of the AWS Bedrock integration.
 
 ---
 
@@ -157,7 +157,7 @@ AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
 BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 ```
-*(If AWS credentials are omitted, the system operates seamlessly with deterministic brief generation).*
+*(If AWS credentials are omitted, the system uses deterministic brief generation).*
 
 ### 3. Seed Demo Data
 ```bash
@@ -233,30 +233,30 @@ The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
 
 ---
 
-## Hackathon Roadmap
+## Development Roadmap
 
-- [x] **Phase 1: MCP Server Core with Task CRUD**
+- **Phase 1: MCP Server Core with Task CRUD** — Completed
   - Streamable HTTP transport per MCP 2025-11-25 specification.
   - SQLite persistence via `better-sqlite3`.
-  - Strict JSON-RPC input validation with Zod.
+  - JSON-RPC input validation with Zod.
   - Dependency resolution and demo seed script.
-- [x] **Phase 2: Guarded Actions & Audit Trail**
-  - Two-phase commit (`propose_action` / `confirm_action`).
-  - Strict protection preventing direct status updates on `HUMAN_REQUIRED` tasks.
+- **Phase 2: Guarded Actions & Audit Trail** — Completed
+  - Two-phase commit protocol (`propose_action` / `confirm_action`).
+  - Protection against direct status updates on `HUMAN_REQUIRED` tasks.
   - Invariant guard refusing advancement of blocked tasks.
   - `get_weekly_brief` structured aggregator.
-- [x] **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)**
+- **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)** — Completed
   - Bedrock Runtime SDK calling Claude on Bedrock.
-  - `get_smart_brief` tool with graceful fallback.
-  - Architectural documentation in `docs/aws-builder.md`.
-- [x] **Phase 4: Web Simulator (Alexa+ Experience)**
-  - Next.js App Router chat interface modeling Alexa+ voice interactions.
-  - Interactive confirmation modal for guarded human-in-the-loop actions.
+  - `get_smart_brief` tool with deterministic fallback.
+  - Architecture documentation in `docs/aws-builder.md`.
+- **Phase 4: Web Simulator (Alexa+ Experience)** — Completed
+  - Next.js App Router interface modeling Alexa+ voice interactions.
+  - Confirmation modal for guarded human-in-the-loop actions.
   - Real-time task status panel with dynamic dependency resolution.
-- [x] **Phase 5: Deployment & Polish**
+- **Phase 5: Deployment & Polish** — Completed
   - Production configurations (`Dockerfile`, `render.yaml`, `fly.toml`, `web/vercel.json`).
-  - Complete architecture, security, and deployment documentation.
-  - Zero uncommitted secrets; clean environment templates.
-- [x] **Phase 6: Submission Assets**
-  - Complete Devpost pitch and submission documentation in `docs/devpost-submission.md`.
+  - Architecture, security, and deployment documentation.
+  - Environment templates without committed secrets.
+- **Phase 6: Submission Assets** — Completed
+  - Devpost pitch and submission documentation in `docs/devpost-submission.md`.
   - Product feedback for the Amazon developer team.

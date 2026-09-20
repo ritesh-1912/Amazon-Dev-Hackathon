@@ -146,6 +146,14 @@ Once running:
 - **MCP Endpoint**: `http://localhost:3001/mcp`
 - **Health Check**: `http://localhost:3001/health`
 
+### Run Web Simulator (Alexa+ Interface)
+```bash
+cd web
+npm install
+npm run dev
+```
+Open `http://localhost:3000` to interact with the conversational Alexa+ simulator and the live task board.
+
 ### Run Automated Tests
 ```bash
 npm test
@@ -169,10 +177,11 @@ npm test
   - Bedrock Runtime SDK calling Claude on Bedrock.
   - `get_smart_brief` tool with graceful fallback.
   - Documentation at `docs/aws-builder.md`.
-- [ ] **Phase 4: Web Simulator (Alexa+ Experience)**
+- [x] **Phase 4: Web Simulator (Alexa+ Experience)**
   - Next.js chat interface modeling Alexa+ voice interactions.
   - Interactive confirmation modal for guarded human-in-the-loop actions.
-  - Real-time task status panel.
+  - Real-time task status panel with dynamic dependency resolution.
 - [ ] **Phase 5: Deployment & Polish**
   - MCP server deployment.
   - Web simulator deployment on Vercel.
+

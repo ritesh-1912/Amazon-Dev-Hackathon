@@ -1,0 +1,116 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001';
+
+// Server-side session management for MCP
+let mcpSessionId: string | null = null;
+
+async function mcpRequest(method: string, params: Record<string, unknown> = {}, id?: number): Promise<any> {
+  const requestId = id ?? Math.floor(Math.random() * 100000);
+  const isNotification = !id && method.startsWith('notifications/');
+
+  const body: any = {
+    jsonrpc: '2.0',
+    method,
+    params,
+  };
+
+  if (!isNotification) {
+    body.id = requestId;
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/event-stream',
+  };
+
+  if (mcpSessionId) {
+    headers['mcp-session-id'] = mcpSessionId;
+  }
+
+  const res = await fetch(`${MCP_SERVER_URL}/mcp`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  const newSessionId = res.headers.get('mcp-session-id');
+  if (newSessionId) {
+    mcpSessionId = newSessionId;
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+
+  if (contentType.includes('text/event-stream')) {
+    const text = await res.text();
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.id === requestId || data.result || data.error) {
+            return data;
+          }
+        } catch {
+          // skip non-JSON lines
+        }
+      }
+    }
+    return null;
+  }
+
+  if (isNotification) {
+    return null;
+  }
+
+  return res.json();
+}
+
+async function ensureInitialized(): Promise<void> {
+  if (mcpSessionId) return;
+
+  const initResponse = await mcpRequest('initialize', {
+    protocolVersion: '2025-11-25',
+    capabilities: {},
+    clientInfo: { name: 'campus-ops-web-simulator', version: '1.0.0' },
+  }, 1);
+
+  if (initResponse?.result) {
+    await mcpRequest('notifications/initialized', {});
+  }
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  try {
+    const { tool, args } = await request.json();
+
+    if (!tool || typeof tool !== 'string') {
+      return NextResponse.json({ error: 'Missing or invalid "tool" field' }, { status: 400 });
+    }
+
+    await ensureInitialized();
+
+    const response = await mcpRequest('tools/call', {
+      name: tool,
+      arguments: args || {},
+    });
+
+    if (response?.result) {
+      return NextResponse.json({ result: response.result });
+    }
+
+    if (response?.error) {
+      return NextResponse.json({ result: { isError: true, content: [{ type: 'text', text: response.error.message }] } });
+    }
+
+    return NextResponse.json({ result: { isError: true, content: [{ type: 'text', text: 'No response from MCP server' }] } });
+  } catch (err: any) {
+    console.error('API route error:', err);
+    // Reset session on connection failure so next call re-initializes
+    mcpSessionId = null;
+    return NextResponse.json(
+      { error: `MCP Server unreachable: ${err.message}. Make sure the server is running on ${MCP_SERVER_URL}` },
+      { status: 502 }
+    );
+  }
+}

@@ -3,8 +3,8 @@ services:
     name: campus-ops-mcp
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npx tsx scripts/seed.ts && npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm run seed && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV

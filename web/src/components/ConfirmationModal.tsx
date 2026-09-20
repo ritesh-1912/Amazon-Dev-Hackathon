@@ -28,8 +28,8 @@ export default function ConfirmationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in-up">
       <div className="bg-[#121215] border border-zinc-800 rounded-xl p-6 max-w-md w-full shadow-2xl shadow-black">
         {/* Shield / Warning Icon */}
-        <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex items-center justify-center w-9 h-9 mx-auto mb-3 rounded-md bg-zinc-800 border border-zinc-700 text-amber-400">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -40,26 +40,26 @@ export default function ConfirmationModal({
         </div>
 
         {/* Modal Prompt Header */}
-        <h3 className="text-sm font-semibold text-center text-zinc-100 mb-2 tracking-tight">
-          Confirm: {actionPhrase} [{taskTitle}]?
+        <h3 className="text-sm font-semibold text-center text-zinc-100 mb-1.5 tracking-tight">
+          Confirm action: {actionPhrase} [{taskTitle}]
         </h3>
 
         {/* Description / Explanation */}
-        <p className="text-xs text-center text-zinc-400 mb-6 leading-relaxed">
-          Task is <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase">HUMAN_REQUIRED</span>. State mutation requires operator confirmation.
+        <p className="text-xs text-center text-zinc-400 mb-5 leading-relaxed">
+          Task is <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase">HUMAN_REQUIRED</span>. State mutation requires operator confirmation.
         </p>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2.5">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors cursor-pointer"
+            className="flex-1 px-4 py-2 rounded-md border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors cursor-pointer"
+            className="flex-1 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors cursor-pointer"
           >
             Confirm
           </button>

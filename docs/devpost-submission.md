@@ -8,6 +8,14 @@ A stateful Model Context Protocol (MCP) server + Alexa+ voice experience that ma
 
 ---
 
+## 🌐 Live URLs
+- **Web Simulator**: [https://campusmcp.vercel.app](https://campusmcp.vercel.app)
+- **MCP Server Endpoint**: [https://campus-ops-mcp-xlse.onrender.com/mcp](https://campus-ops-mcp-xlse.onrender.com/mcp)
+- **MCP Health Diagnostic**: [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health)
+- **GitHub Repository**: [https://github.com/ritesh-1912/Amazon-Dev-Hackathon](https://github.com/ritesh-1912/Amazon-Dev-Hackathon)
+
+---
+
 ## 🏆 Targeted Hackathon Tracks
 - **Alexa+ Track**: Simulated Experience Path (Conversational Next.js UI interacting with stateful MCP server).
 - **AWS Builder Mini-Challenge**: Live AWS Bedrock Runtime integration with Anthropic Claude for natural language intelligence and weekly briefs.

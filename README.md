@@ -6,6 +6,13 @@ Built for the **Amazon Developer Hackathon 2026** (Alexa+ track — simulated ex
 
 ---
 
+## 🌐 Live Deployments
+- **Alexa+ Web Simulator**: [https://campusmcp.vercel.app](https://campusmcp.vercel.app)
+- **Campus Ops MCP Server**: [https://campus-ops-mcp-xlse.onrender.com](https://campus-ops-mcp-xlse.onrender.com)
+- **MCP Server Health Check**: [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health)
+
+---
+
 ## 📌 Problem Statement
 
 Students juggle complex, high-stakes deadlines across disjointed university portals: course assignments on Canvas/Blackboard, tuition payments on Bursar systems, capstone deliverables on GitHub, and library book loans. 

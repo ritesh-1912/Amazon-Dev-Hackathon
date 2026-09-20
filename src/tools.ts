@@ -9,6 +9,7 @@ import {
   confirmAction,
   getWeeklyBriefData,
 } from './db.js';
+import { generateSmartBrief } from './lib/bedrock.js';
 import type { TaskCategory, TaskStatus, ActionClass } from './types.js';
 
 export function registerTaskTools(server: McpServer): void {
@@ -307,6 +308,38 @@ export function registerTaskTools(server: McpServer): void {
             {
               type: 'text',
               text: `Failed to generate weekly brief: ${err.message}`,
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  // 8. get_smart_brief (AI-powered spoken weekly brief via AWS Bedrock)
+  server.tool(
+    'get_smart_brief',
+    'Generate an AI-synthesized spoken-style brief using Claude on AWS Bedrock. Summarizes what is due soon, what is blocked and why, and what requires student confirmation.',
+    {},
+    async () => {
+      try {
+        const briefData = getWeeklyBriefData();
+        const smartResult = await generateSmartBrief(briefData);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: smartResult.brief,
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Failed to generate smart brief: ${err.message}`,
             },
           ],
         };

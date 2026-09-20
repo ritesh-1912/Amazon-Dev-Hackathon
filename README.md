@@ -165,7 +165,7 @@ npm test
   - Strict protection preventing direct status updates on `HUMAN_REQUIRED` tasks.
   - Invariant guard refusing advancement of blocked tasks.
   - `get_weekly_brief` structured aggregator.
-- [ ] **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)**
+- [x] **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)**
   - Bedrock Runtime SDK calling Claude on Bedrock.
   - `get_smart_brief` tool with graceful fallback.
   - Documentation at `docs/aws-builder.md`.

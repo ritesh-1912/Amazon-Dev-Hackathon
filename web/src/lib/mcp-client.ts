@@ -1,6 +1,10 @@
 // MCP Client that communicates with the Campus Ops MCP server over Streamable HTTP
-
-const MCP_SERVER_URL = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001';
+const rawClientUrl =
+  process.env.NEXT_PUBLIC_MCP_SERVER_URL ||
+  process.env.MCP_SERVER_URL ||
+  process.env.MCP_URL ||
+  'http://localhost:3001';
+const MCP_SERVER_URL = rawClientUrl.replace(/\/+$/, '');
 
 interface McpToolCallResult {
   content: Array<{ type: string; text: string }>;

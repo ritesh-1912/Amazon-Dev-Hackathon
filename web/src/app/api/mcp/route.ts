@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001';
+const rawServerUrl =
+  process.env.MCP_SERVER_URL ||
+  process.env.MCP_URL ||
+  process.env.NEXT_PUBLIC_MCP_SERVER_URL ||
+  'http://localhost:3001';
+const MCP_SERVER_URL = rawServerUrl.replace(/\/+$/, '');
 
 // Server-side session management for MCP
 let mcpSessionId: string | null = null;

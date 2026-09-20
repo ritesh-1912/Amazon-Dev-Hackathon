@@ -2,39 +2,39 @@
 
 import { Task } from '@/lib/types';
 
-const statusConfig: Record<string, { label: string; badge: string; color: string; bg: string }> = {
+const statusConfig: Record<string, { label: string; badge: string; dot: string; bg: string }> = {
   open: {
     label: 'Open',
     badge: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    color: 'text-blue-400',
+    dot: 'bg-blue-400',
     bg: 'bg-[#18181b] border-neutral-800 hover:border-blue-500/40',
   },
   blocked: {
     label: 'Blocked',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    color: 'text-amber-400',
+    dot: 'bg-amber-400',
     bg: 'bg-[#18181b] border-amber-500/30 hover:border-amber-500/60 shadow-sm shadow-amber-500/5',
   },
   done: {
     label: 'Done',
     badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    color: 'text-emerald-400',
+    dot: 'bg-emerald-400',
     bg: 'bg-[#18181b] border-neutral-800/80 opacity-75 hover:opacity-100 hover:border-emerald-500/40',
   },
   stale: {
     label: 'Overdue',
     badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    color: 'text-rose-400',
+    dot: 'bg-rose-400',
     bg: 'bg-[#18181b] border-rose-500/30 hover:border-rose-500/60 shadow-sm shadow-rose-500/5',
   },
 };
 
-const categoryIcons: Record<string, string> = {
-  assignment: '📝',
-  fee: '💳',
-  project: '🔬',
-  library: '📚',
-  other: '📌',
+const categoryLabels: Record<string, string> = {
+  assignment: 'Assignment',
+  fee: 'Fee',
+  project: 'Project',
+  library: 'Library',
+  other: 'Task',
 };
 
 export default function TaskSidebar({
@@ -72,7 +72,20 @@ export default function TaskSidebar({
             className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 transition-colors flex items-center gap-1 cursor-pointer"
             title="Refresh tasks from MCP server"
           >
-            <span className={loading ? 'animate-spin' : ''}>↻</span> {loading ? 'Syncing...' : 'Refresh'}
+            <svg
+              className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span>{loading ? 'Syncing' : 'Refresh'}</span>
           </button>
         </div>
 
@@ -118,8 +131,11 @@ export default function TaskSidebar({
               {/* Top Row: Category & Badges */}
               <div className="flex items-center justify-between gap-1.5 mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs">{categoryIcons[task.category] || '📌'}</span>
-                  <span className="text-[10px] font-mono text-neutral-400">
+                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                  <span className="text-[10px] font-semibold text-neutral-300">
+                    {categoryLabels[task.category] || 'Task'}
+                  </span>
+                  <span className="text-[10px] font-mono text-neutral-500">
                     {task.id}
                   </span>
                 </div>
@@ -134,7 +150,7 @@ export default function TaskSidebar({
                       className="text-[9px] font-semibold px-1 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30"
                       title="Requires explicit human confirmation before state changes"
                     >
-                      🛡️ Guard
+                      GUARD
                     </span>
                   )}
                 </div>
@@ -147,9 +163,9 @@ export default function TaskSidebar({
 
               {/* Dependencies banner if blocked */}
               {task.status === 'blocked' && task.depends_on.length > 0 && (
-                <div className="mt-2 text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded px-2 py-1 flex items-center gap-1">
-                  <span>⛓️</span>
-                  <span>Blocked by: <strong>{task.depends_on.join(', ')}</strong></span>
+                <div className="mt-2 text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded px-2 py-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                  <span>Prerequisite: <strong>{task.depends_on.join(', ')}</strong></span>
                 </div>
               )}
 
@@ -163,7 +179,7 @@ export default function TaskSidebar({
                   })}
                 </span>
                 <span className="text-neutral-600 group-hover:text-blue-400 transition-colors">
-                  Ask AI →
+                  Details
                 </span>
               </div>
             </div>

@@ -6,14 +6,14 @@ Built for the **Amazon Developer Hackathon 2026** (Alexa+ track — simulated ex
 
 ---
 
-## 🌐 Live Deployments
+## Live Deployments
 - **Alexa+ Web Simulator**: [https://campusmcp.vercel.app](https://campusmcp.vercel.app)
 - **Campus Ops MCP Server**: [https://campus-ops-mcp-xlse.onrender.com](https://campus-ops-mcp-xlse.onrender.com)
 - **MCP Server Health Check**: [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health)
 
 ---
 
-## 📌 Problem Statement
+## Problem Statement
 
 Students juggle complex, high-stakes deadlines across disjointed university portals: course assignments on Canvas/Blackboard, tuition payments on Bursar systems, capstone deliverables on GitHub, and library book loans. 
 
@@ -25,47 +25,47 @@ When autonomous agents or assistants interact with these systems without constra
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                 Alexa+ Web Simulator (Next.js)              │
-│  - Conversational Voice-Style Chat Interface                │
-│  - Natural Language Intent Router                           │
-│  - Guarded Action Confirmation Modal (Two-Phase Approval)   │
-│  - Live Task Board with Reactive Dependency Resolution      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Streamable HTTP (JSON-RPC 2.0)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Campus Ops MCP Server                    │
-│   (Node.js + TypeScript + @modelcontextprotocol/sdk)        │
-│                                                             │
-│   Endpoints:                                                │
-│   - POST   /mcp      (JSON-RPC requests, session mgmt)      │
-│   - GET    /mcp      (SSE streams / notifications)          │
-│   - DELETE /mcp      (Session termination)                  │
-│   - GET    /health   (Service diagnostics & status)         │
-│                                                             │
-│   Core Engines & Tool Registry:                             │
-│   ├── MCP Tool Registry (create_task, list_tasks, ...)      │
-│   ├── Dynamic State Invariant Engine (open/blocked/stale)   │
-│   ├── Guarded Action Gatekeeper (AUTO vs HUMAN_REQUIRED)    │
-│   └── Bedrock AI Engine (Claude on AWS Bedrock)             │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   SQLite Persistence Layer                  │
-│               (better-sqlite3 + WAL mode)                   │
-│        - Tasks Table (dependencies, action_class, status)   │
-│        - Audit Logs Table (immutable timestamped history)   │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                 Alexa+ Web Simulator (Next.js)              |
+|  - Conversational Voice-Style Chat Interface                |
+|  - Natural Language Intent Router                           |
+|  - Guarded Action Confirmation Modal (Two-Phase Approval)   |
+|  - Live Task Board with Reactive Dependency Resolution      |
++------------------------------+------------------------------+
+                               | Streamable HTTP (JSON-RPC 2.0)
+                               v
++-------------------------------------------------------------+
+|                    Campus Ops MCP Server                    |
+|   (Node.js + TypeScript + @modelcontextprotocol/sdk)        |
+|                                                             |
+|   Endpoints:                                                |
+|   - POST   /mcp      (JSON-RPC requests, session mgmt)      |
+|   - GET    /mcp      (SSE streams / notifications)          |
+|   - DELETE /mcp      (Session termination)                  |
+|   - GET    /health   (Service diagnostics & status)         |
+|                                                             |
+|   Core Engines & Tool Registry:                             |
+|   +-- MCP Tool Registry (create_task, list_tasks, ...)      |
+|   +-- Dynamic State Invariant Engine (open/blocked/stale)   |
+|   +-- Guarded Action Gatekeeper (AUTO vs HUMAN_REQUIRED)    |
+|   +-- Bedrock AI Engine (Claude on AWS Bedrock)             |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
+|                   SQLite Persistence Layer                  |
+|               (better-sqlite3 + WAL mode)                   |
+|        - Tasks Table (dependencies, action_class, status)   |
+|        - Audit Logs Table (immutable timestamped history)   |
++-------------------------------------------------------------+
 ```
 
 ---
 
-## 🎯 How Alexa+ & MCP Requirements Are Satisfied
+## How Alexa+ & MCP Requirements Are Satisfied
 
 | Requirement | Implementation in Campus Ops |
 |---|---|
@@ -77,7 +77,7 @@ When autonomous agents or assistants interact with these systems without constra
 
 ---
 
-## ☁️ How AWS Bedrock Is Used (AWS Builder Challenge)
+## How AWS Bedrock Is Used (AWS Builder Challenge)
 
 Campus Ops MCP integrates **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
 
@@ -90,7 +90,7 @@ Campus Ops MCP integrates **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-
 
 ---
 
-## 📊 Data Model
+## Data Model
 
 ```typescript
 interface Task {
@@ -117,7 +117,7 @@ interface Task {
 
 ---
 
-## 🛠️ MCP Tools
+## MCP Tools
 
 | Tool | Parameters | Description |
 |---|---|---|
@@ -132,7 +132,7 @@ interface Task {
 
 ---
 
-## 💻 Local Quickstart
+## Local Quickstart
 
 ### Prerequisites
 - Node.js `>= 20` (Node 22 LTS or Node 24 recommended)
@@ -192,14 +192,14 @@ All 19 test cases verify:
 
 ---
 
-## 🌐 Production Deployment Guide
+## Production Deployment Guide
 
 ### Deploying MCP Server (Render / Fly.io / Docker)
 
 #### Option A: Deploy to Render
 The repository includes a ready-to-use [`render.yaml`](render.yaml) blueprint:
 1. Push this repository to GitHub.
-2. In the [Render Dashboard](https://dashboard.render.com/), select **New ➔ Blueprint**.
+2. In the [Render Dashboard](https://dashboard.render.com/), select **New -> Blueprint**.
 3. Connect your repository. Render detects `render.yaml` and deploys the `campus-ops-mcp` web service.
 4. Set optional environment variables: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
 5. Your MCP server will be live at `https://<service-name>.onrender.com`. Health endpoint: `/health`.
@@ -216,7 +216,7 @@ fly deploy
 ### Deploying Web Simulator (Vercel)
 
 The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
-1. In the [Vercel Dashboard](https://vercel.com/), click **Add New ➔ Project**.
+1. In the [Vercel Dashboard](https://vercel.com/), click **Add New -> Project**.
 2. Select the repository and set the **Root Directory** to `web`.
 3. Under **Environment Variables**, add:
    - `MCP_SERVER_URL`: `https://<your-mcp-server>.onrender.com`
@@ -225,7 +225,7 @@ The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
 
 ---
 
-## 🔒 Security & Secrets Hygiene
+## Security & Secrets Hygiene
 
 - No credentials, tokens, or private keys are committed to Git.
 - Both root `.gitignore` and `web/.gitignore` prevent `.env`, `.env.local`, SQLite databases (`*.db`), and build artifacts from tracking.
@@ -233,7 +233,7 @@ The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
 
 ---
 
-## 📋 Hackathon Roadmap
+## Hackathon Roadmap
 
 - [x] **Phase 1: MCP Server Core with Task CRUD**
   - Streamable HTTP transport per MCP 2025-11-25 specification.
@@ -257,3 +257,6 @@ The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
   - Production configurations (`Dockerfile`, `render.yaml`, `fly.toml`, `web/vercel.json`).
   - Complete architecture, security, and deployment documentation.
   - Zero uncommitted secrets; clean environment templates.
+- [x] **Phase 6: Submission Assets**
+  - Complete Devpost pitch and submission documentation in `docs/devpost-submission.md`.
+  - Product feedback for the Amazon developer team.

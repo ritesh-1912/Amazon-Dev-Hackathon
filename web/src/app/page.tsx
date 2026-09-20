@@ -40,47 +40,46 @@ function formatToolResponse(tool: string, rawText: string): string {
       if (parsed.length === 0) return 'No tasks found matching that filter.';
       return parsed
         .map((t: any) => {
-          const statusIcon =
-            t.status === 'done' ? '✅' : t.status === 'blocked' ? '🔒' : t.status === 'stale' ? '⚠️' : '📋';
-          const guard = t.action_class === 'HUMAN_REQUIRED' ? ' 🛡️ [HUMAN_REQUIRED]' : ' ⚡ [AUTO]';
+          const statusTag = `[${t.status.toUpperCase()}]`;
+          const guardTag = t.action_class === 'HUMAN_REQUIRED' ? '[GUARDED]' : '[AUTO]';
           let depText = '';
           if (t.depends_on && t.depends_on.length > 0) {
-            depText = `\n   ⛓️ Blocked by: \`${t.depends_on.join(', ')}\``;
+            depText = `\n   Prerequisites: \`${t.depends_on.join(', ')}\``;
           }
-          return `${statusIcon} **${t.title}**${guard}\n   ID: \`${t.id}\` · Status: **${t.status.toUpperCase()}** · Due: ${new Date(t.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${depText}`;
+          return `* ${statusTag} **${t.title}** ${guardTag}\n   ID: \`${t.id}\` | Due: ${new Date(t.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${depText}`;
         })
         .join('\n\n');
     }
 
     if (tool === 'get_task' && parsed.id) {
       const t = parsed;
-      const guard = t.action_class === 'HUMAN_REQUIRED' ? '🛡️ HUMAN_REQUIRED (guarded)' : '⚡ AUTO';
-      return `### 📋 ${t.title}\n- **ID**: \`${t.id}\`\n- **Category**: ${t.category}\n- **Status**: ${t.status.toUpperCase()}\n- **Action Class**: ${guard}\n- **Deadline**: ${new Date(t.deadline).toLocaleString()}\n- **Dependencies**: ${t.depends_on?.length ? t.depends_on.join(', ') : 'None'}`;
+      const guardTag = t.action_class === 'HUMAN_REQUIRED' ? 'HUMAN_REQUIRED (Guarded)' : 'AUTO';
+      return `### Task Details: ${t.title}\n\n- **ID**: \`${t.id}\`\n- **Category**: ${t.category}\n- **Status**: ${t.status.toUpperCase()}\n- **Action Class**: ${guardTag}\n- **Deadline**: ${new Date(t.deadline).toLocaleString()}\n- **Dependencies**: ${t.depends_on?.length ? t.depends_on.join(', ') : 'None'}`;
     }
 
     if (tool === 'confirm_action' && parsed.confirmed !== undefined) {
       if (parsed.confirmed) {
-        return `✅ **Action Confirmed & Executed**\n\n${parsed.message || 'Task state updated.'}\n\nTask \`${parsed.task_id}\` is now marked as **DONE**. Audit trail recorded.`;
+        return `**Action Confirmed & Executed**\n\n${parsed.message || 'Task state updated.'}\n\nTask \`${parsed.task_id}\` status updated to **DONE**. Recorded in audit trail.`;
       } else {
-        return `❌ **Action Cancelled**\n\n${parsed.message || 'Task state was left unchanged.'}\n\nNo modifications were made to task \`${parsed.task_id}\`. Audit trail recorded rejection.`;
+        return `**Action Cancelled**\n\n${parsed.message || 'Task state was left unchanged.'}\n\nNo modifications applied to task \`${parsed.task_id}\`. Recorded rejection in audit trail.`;
       }
     }
 
     if (tool === 'get_smart_brief' || tool === 'get_weekly_brief') {
       if (typeof parsed === 'string') return parsed;
       if (parsed.summary) return parsed.summary;
-      let out = '### 🗓️ Weekly Academic Ops Brief\n\n';
+      let out = '### Weekly Academic Ops Brief\n\n';
       if (parsed.open_tasks?.length) {
-        out += `📋 **Open Tasks (${parsed.open_tasks.length})**:\n${parsed.open_tasks.map((t: any) => `  • **${t.title}** — due ${new Date(t.deadline).toLocaleDateString()}`).join('\n')}\n\n`;
+        out += `**Open Tasks (${parsed.open_tasks.length})**:\n${parsed.open_tasks.map((t: any) => `- **${t.title}** — due ${new Date(t.deadline).toLocaleDateString()}`).join('\n')}\n\n`;
       }
       if (parsed.blocked_tasks?.length) {
-        out += `🔒 **Blocked Tasks (${parsed.blocked_tasks.length})**:\n${parsed.blocked_tasks.map((t: any) => `  • **${t.title}** — blocked by: \`${t.blocked_by?.join(', ')}\``).join('\n')}\n\n`;
+        out += `**Blocked Tasks (${parsed.blocked_tasks.length})**:\n${parsed.blocked_tasks.map((t: any) => `- **${t.title}** — blocked by prerequisite: \`${t.blocked_by?.join(', ')}\``).join('\n')}\n\n`;
       }
       if (parsed.stale_tasks?.length) {
-        out += `⚠️ **Overdue Tasks (${parsed.stale_tasks.length})**:\n${parsed.stale_tasks.map((t: any) => `  • **${t.title}** — ${t.days_overdue} days overdue`).join('\n')}\n\n`;
+        out += `**Overdue Tasks (${parsed.stale_tasks.length})**:\n${parsed.stale_tasks.map((t: any) => `- **${t.title}** — ${t.days_overdue} days past deadline`).join('\n')}\n\n`;
       }
       if (parsed.done_tasks?.length) {
-        out += `✅ **Completed Tasks (${parsed.done_tasks.length})**:\n${parsed.done_tasks.map((t: any) => `  • **${t.title}**`).join('\n')}\n\n`;
+        out += `**Completed Tasks (${parsed.done_tasks.length})**:\n${parsed.done_tasks.map((t: any) => `- **${t.title}**`).join('\n')}\n\n`;
       }
       return out.trim();
     }
@@ -97,7 +96,7 @@ export default function Home() {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Good morning! 👋 I am your **Campus Ops** assistant powered by Alexa+ and AWS Bedrock.\n\nI monitor your course assignments, tuition fees, project dependencies, and library loans. I keep you informed of what is due and protect critical real-world actions with human confirmations.\n\nTry asking me or clicking the quick prompts below:\n• **"What\'s due this week?"** (Bedrock Smart Brief)\n• **"What\'s blocked?"** (Dependency check)\n• **"Complete CS 301 design"** (Unblock milestone)\n• **"Pay tuition fee"** (Human-guarded action)',
+        'Welcome to **Campus Ops** — your academic operations assistant powered by Alexa+ and AWS Bedrock.\n\nI monitor your course assignments, tuition fees, project dependencies, and library loans. I keep you informed of upcoming deadlines and protect real-world mutations with human confirmation gates.\n\nAsk a question or click a workflow step below:\n- **"What\'s due this week?"** (Bedrock Smart Brief)\n- **"What\'s blocked?"** (Dependency check)\n- **"Complete CS 301 design"** (Resolve prerequisite)\n- **"Pay tuition fee"** (Human-guarded action)',
       timestamp: new Date(),
     },
   ]);
@@ -194,7 +193,7 @@ export default function Home() {
 
           addMessage({
             role: 'assistant',
-            content: `🛡️ **Action Requires Confirmation**\n\nI need your explicit authorization before proceeding:\n\n> **Task**: ${taskTitle} (\`${taskId}\`)\n> **Action**: \`${action}\`\n> **Reason**: ${parsed.reason}\n\nPlease confirm or cancel via the prompt dialog.`,
+            content: `**Action Requires Confirmation**\n\nExplicit authorization required before mutating state:\n\n> **Task**: ${taskTitle} (\`${taskId}\`)\n> **Action**: \`${action}\`\n> **Reason**: ${parsed.reason}\n\nPlease confirm or cancel via the prompt dialog.`,
           });
 
           await refreshTasks();
@@ -213,7 +212,7 @@ export default function Home() {
           const formatted = formatToolResponse('confirm_action', confirmText);
           addMessage({
             role: 'assistant',
-            content: `⚡ **Executed Auto Action**\n\n${formatted}`,
+            content: `**Executed Auto Action**\n\n${formatted}`,
           });
           await refreshTasks();
           return;
@@ -231,7 +230,7 @@ export default function Home() {
     } catch (err: any) {
       addMessage({
         role: 'system',
-        content: `⚠️ Error: ${err.message}`,
+        content: `Error: ${err.message}`,
       });
     } finally {
       setIsLoading(false);
@@ -243,7 +242,7 @@ export default function Home() {
   const handleConfirm = useCallback(async () => {
     if (!pendingConfirmation) return;
 
-    const { taskId, action, taskTitle } = pendingConfirmation;
+    const { taskId, action } = pendingConfirmation;
     setPendingConfirmation(null);
     setIsLoading(true);
 
@@ -261,7 +260,7 @@ export default function Home() {
     } catch (err: any) {
       addMessage({
         role: 'system',
-        content: `⚠️ Confirmation failed: ${err.message}`,
+        content: `Confirmation failed: ${err.message}`,
       });
     } finally {
       setIsLoading(false);
@@ -290,7 +289,7 @@ export default function Home() {
     } catch (err: any) {
       addMessage({
         role: 'system',
-        content: `⚠️ Cancellation failed: ${err.message}`,
+        content: `Cancellation failed: ${err.message}`,
       });
     } finally {
       setIsLoading(false);
@@ -340,13 +339,13 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-neutral-800/80 border border-neutral-700/60">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-neutral-300 font-mono">MCP :3001 Connected</span>
+              <span className="text-xs text-neutral-300 font-mono">MCP Connected</span>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-xs text-neutral-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-700 transition-all cursor-pointer"
             >
-              {sidebarOpen ? 'Hide Panel ➔' : '⬅ Show Board'}
+              {sidebarOpen ? 'Hide Panel' : 'Show Board'}
             </button>
           </div>
         </header>
@@ -383,7 +382,19 @@ export default function Home() {
         {/* Input Bar */}
         <div className="p-4 border-t border-neutral-800 bg-[#0d0d10]/90">
           <div className="flex items-center gap-3 bg-[#18181b] border border-neutral-700/80 rounded-2xl px-4 py-2.5 focus-within:border-blue-500 shadow-lg shadow-black/40 transition-colors">
-            <span className="text-neutral-500 text-sm">🎙️</span>
+            <svg
+              className="w-4 h-4 text-neutral-500 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              />
+            </svg>
             <input
               ref={inputRef}
               type="text"

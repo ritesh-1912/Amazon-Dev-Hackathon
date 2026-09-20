@@ -320,32 +320,32 @@ export default function Home() {
       {/* Main Chat Interface */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="flex items-center justify-between px-6 py-3.5 border-b border-neutral-800 bg-[#0d0d10]/90 backdrop-blur-md">
+        <header className="flex items-center justify-between px-6 py-3 border-b border-zinc-800 bg-[#0c0c0e]/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-              <span className="text-base font-bold">A+</span>
+            <div className="w-7 h-7 rounded-md bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-200">
+              <span className="text-xs font-mono font-semibold">CO</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-semibold text-white tracking-tight">Campus Ops MCP</h1>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                  Alexa+ Voice Simulator
+                <h1 className="text-xs font-semibold text-zinc-100 tracking-tight">Campus Ops</h1>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/90 text-zinc-400 border border-zinc-700 font-mono">
+                  Alexa+ Simulator
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400">Streamable HTTP MCP · AWS Bedrock (Claude) · SQLite</p>
+              <p className="text-[11px] text-zinc-500">Streamable HTTP MCP · AWS Bedrock (Claude) · SQLite</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-neutral-800/80 border border-neutral-700/60">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-neutral-300 font-mono">MCP Connected</span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-xs text-zinc-400 font-mono">MCP Connected</span>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-xs text-neutral-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-700 transition-all cursor-pointer"
+              className="text-xs text-zinc-400 hover:text-zinc-200 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
             >
-              {sidebarOpen ? 'Hide Panel' : 'Show Board'}
+              {sidebarOpen ? 'Hide Board' : 'Show Board'}
             </button>
           </div>
         </header>
@@ -360,18 +360,18 @@ export default function Home() {
         </div>
 
         {/* Demo Workflow Quick Steps */}
-        <div className="px-6 py-2 border-t border-neutral-800/50 bg-[#0d0d10]/40 flex items-center gap-2 overflow-x-auto">
-          <span className="text-[11px] text-neutral-500 font-medium whitespace-nowrap">
-            User Story Flow:
+        <div className="px-6 py-2 border-t border-zinc-800/60 bg-[#0c0c0e]/60 flex items-center gap-1.5 overflow-x-auto">
+          <span className="text-[11px] text-zinc-500 font-medium whitespace-nowrap">
+            Workflow:
           </span>
           {demoSteps.map((ds) => (
             <button
               key={ds.step}
               onClick={() => handleSend(ds.prompt)}
               disabled={isLoading}
-              className="text-xs px-3 py-1.5 rounded-lg border border-neutral-800 bg-neutral-900/90 text-neutral-300 hover:text-white hover:border-blue-500/50 hover:bg-blue-600/10 transition-all whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800/80 transition-colors whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
-              <span className="w-4 h-4 rounded-full bg-neutral-800 text-[10px] text-neutral-400 flex items-center justify-center font-bold">
+              <span className="w-3.5 h-3.5 rounded bg-zinc-800 text-[10px] text-zinc-500 flex items-center justify-center font-mono font-medium">
                 {ds.step}
               </span>
               <span>{ds.label}</span>
@@ -380,10 +380,10 @@ export default function Home() {
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-neutral-800 bg-[#0d0d10]/90">
-          <div className="flex items-center gap-3 bg-[#18181b] border border-neutral-700/80 rounded-2xl px-4 py-2.5 focus-within:border-blue-500 shadow-lg shadow-black/40 transition-colors">
+        <div className="p-4 border-t border-zinc-800 bg-[#0c0c0e]/95">
+          <div className="flex items-center gap-3 bg-[#121215] border border-zinc-800 rounded-lg px-3.5 py-2 focus-within:border-zinc-600 transition-colors">
             <svg
-              className="w-4 h-4 text-neutral-500 flex-shrink-0"
+              className="w-4 h-4 text-zinc-500 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -402,13 +402,13 @@ export default function Home() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask Alexa+ (e.g. 'What's due this week?', 'Complete dependency', 'Mark fees paid')..."
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-500 outline-none"
+              className="flex-1 bg-transparent text-xs text-zinc-100 placeholder:text-zinc-500 outline-none"
               disabled={isLoading}
             />
             <button
               onClick={() => handleSend()}
               disabled={isLoading || !inputValue.trim()}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold disabled:opacity-40 disabled:hover:bg-blue-600 shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium disabled:opacity-30 disabled:hover:bg-zinc-100 transition-colors cursor-pointer"
             >
               Send
             </button>

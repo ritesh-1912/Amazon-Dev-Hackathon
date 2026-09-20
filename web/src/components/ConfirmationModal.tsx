@@ -25,11 +25,11 @@ export default function ConfirmationModal({
   const actionPhrase = getActionPhrase(action);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in-up">
-      <div className="bg-[#18181b] border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-black/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in-up">
+      <div className="bg-[#121215] border border-zinc-800 rounded-xl p-6 max-w-md w-full shadow-2xl shadow-black">
         {/* Shield / Warning Icon */}
-        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -40,26 +40,26 @@ export default function ConfirmationModal({
         </div>
 
         {/* Modal Prompt Header */}
-        <h3 className="text-base font-bold text-center text-white mb-2 tracking-tight">
+        <h3 className="text-sm font-semibold text-center text-zinc-100 mb-2 tracking-tight">
           Confirm: {actionPhrase} [{taskTitle}]?
         </h3>
 
         {/* Description / Explanation */}
-        <p className="text-xs text-center text-neutral-400 mb-6 leading-relaxed">
-          This task is classified as <span className="text-purple-400 font-semibold uppercase">HUMAN_REQUIRED</span>. It alters real-world academic/financial state and requires your explicit confirmation before mutating.
+        <p className="text-xs text-center text-zinc-400 mb-6 leading-relaxed">
+          This task is classified as <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase">HUMAN_REQUIRED</span>. It alters real-world academic/financial state and requires your explicit confirmation before mutating.
         </p>
 
         {/* Action Buttons */}
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-700 bg-neutral-800/80 text-sm font-medium text-neutral-300 hover:bg-neutral-700 hover:text-white transition-all cursor-pointer"
+            className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors cursor-pointer"
           >
             Confirm
           </button>

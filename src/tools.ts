@@ -5,6 +5,9 @@ import {
   listTasks,
   getTask,
   updateTask,
+  proposeAction,
+  confirmAction,
+  getWeeklyBriefData,
 } from './db.js';
 import type { TaskCategory, TaskStatus, ActionClass } from './types.js';
 
@@ -154,16 +157,16 @@ export function registerTaskTools(server: McpServer): void {
     }
   );
 
-  // 4. update_task
+  // 4. update_task (with guard against direct status updates on HUMAN_REQUIRED tasks)
   server.tool(
     'update_task',
-    'Update an existing task status, title, deadline, or dependencies. Records changes in the audit log.',
+    'Update task fields (title, deadline, dependencies, note) or status for AUTO tasks. NOTE: Direct status changes on HUMAN_REQUIRED tasks are rejected and must go through propose_action -> confirm_action.',
     {
       id: z.string().min(1, 'Task ID cannot be empty').describe('Unique ID of the task to update'),
       status: z
         .enum(['open', 'blocked', 'done', 'stale'])
         .optional()
-        .describe('New status for the task'),
+        .describe('New status (only allowed for AUTO tasks; rejected on HUMAN_REQUIRED tasks)'),
       title: z.string().min(1).optional().describe('Updated title'),
       deadline: z
         .string()
@@ -201,6 +204,109 @@ export function registerTaskTools(server: McpServer): void {
             {
               type: 'text',
               text: `Failed to update task: ${err.message}`,
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  // 5. propose_action (Guarded action proposal)
+  server.tool(
+    'propose_action',
+    'Propose an action on a task without altering state. For HUMAN_REQUIRED tasks (e.g. paying fees, submitting final code), returns a proposal requiring explicit confirmation and logs to audit trail.',
+    {
+      task_id: z.string().min(1, 'task_id cannot be empty').describe('ID of the task'),
+      action: z
+        .string()
+        .min(1, 'action cannot be empty')
+        .describe('The action to propose, e.g. "pay_fee", "submit_project", or "mark_done"'),
+    },
+    async (args) => {
+      try {
+        const proposal = proposeAction(args.task_id, args.action);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(proposal, null, 2),
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Failed to propose action: ${err.message}`,
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  // 6. confirm_action (Guarded action execution)
+  server.tool(
+    'confirm_action',
+    'Execute or reject a proposed action on a HUMAN_REQUIRED or guarded task. Only mutates state when confirmed is true. Always appends to the audit trail.',
+    {
+      task_id: z.string().min(1, 'task_id cannot be empty').describe('ID of the task'),
+      action: z.string().min(1, 'action cannot be empty').describe('The action being confirmed or rejected'),
+      confirmed: z
+        .boolean()
+        .describe('Explicit student confirmation. If true, executes the action; if false, rejects the action without changing state.'),
+      note: z.string().optional().describe('Optional explanation or reason for audit trail'),
+    },
+    async (args) => {
+      try {
+        const result = confirmAction(args.task_id, args.action, args.confirmed, args.note);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Failed to confirm action: ${err.message}`,
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  // 7. get_weekly_brief (Structured brief aggregator)
+  server.tool(
+    'get_weekly_brief',
+    'Generate a structured weekly brief of academic operations: tasks due in next 7 days, currently blocked tasks (with blocker reasons), and stale tasks.',
+    {},
+    async () => {
+      try {
+        const brief = getWeeklyBriefData();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(brief, null, 2),
+            },
+          ],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Failed to generate weekly brief: ${err.message}`,
             },
           ],
         };

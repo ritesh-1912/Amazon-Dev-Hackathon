@@ -2,7 +2,20 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { Task, CreateTaskInput, UpdateTaskInput, TaskFilter, AuditLogEntry, TaskStatus, ActionClass, TaskCategory } from './types.js';
+import type {
+  Task,
+  CreateTaskInput,
+  UpdateTaskInput,
+  TaskFilter,
+  AuditLogEntry,
+  TaskStatus,
+  ActionClass,
+  TaskCategory,
+  ActionProposal,
+  ActionConfirmationResult,
+  WeeklyBrief,
+  BlockedTaskInfo,
+} from './types.js';
 
 let dbInstance: Database.Database | null = null;
 
@@ -12,7 +25,7 @@ export function getDb(dbPath?: string): Database.Database {
   }
 
   const resolvedPath = dbPath || process.env.DB_PATH || path.join(process.cwd(), 'data', 'campus_ops.db');
-  
+
   if (resolvedPath !== ':memory:') {
     const dir = path.dirname(resolvedPath);
     if (!fs.existsSync(dir)) {
@@ -226,9 +239,10 @@ export function createTask(input: CreateTaskInput, db: Database.Database = getDb
   const id = input.id || `task_${randomUUID().slice(0, 8)}`;
   const now = new Date().toISOString();
   const dependsOn = input.depends_on || [];
-  
+
   // Default action_class: fee and project are HUMAN_REQUIRED, others AUTO
-  const actionClass = input.action_class || (input.category === 'fee' || input.category === 'project' ? 'HUMAN_REQUIRED' : 'AUTO');
+  const actionClass =
+    input.action_class || (input.category === 'fee' || input.category === 'project' ? 'HUMAN_REQUIRED' : 'AUTO');
 
   // Compute initial status
   const allRows = db.prepare('SELECT id, status FROM tasks').all() as Array<{ id: string; status: TaskStatus }>;
@@ -266,6 +280,32 @@ export function updateTask(input: UpdateTaskInput, db: Database.Database = getDb
     throw new Error(`Task with id "${input.id}" not found`);
   }
 
+  // GUARD: Direct status changes on HUMAN_REQUIRED tasks are forbidden!
+  if (
+    input.status !== undefined &&
+    input.status !== existing.status &&
+    existing.action_class === 'HUMAN_REQUIRED' &&
+    !input.bypass_human_guard
+  ) {
+    throw new Error(
+      `Direct status update on HUMAN_REQUIRED task "${input.id}" is forbidden. Action changes state and requires propose_action followed by confirm_action.`
+    );
+  }
+
+  // GUARD: Refuse to advance blocked tasks to 'done'
+  if (input.status === 'done') {
+    const uncompletedDeps = existing.depends_on.filter((depId) => {
+      const dep = getTask(depId, db);
+      return !dep || dep.status !== 'done';
+    });
+
+    if (uncompletedDeps.length > 0) {
+      throw new Error(
+        `Cannot advance task "${input.id}" to done: it is blocked by unfinished prerequisite tasks: [${uncompletedDeps.join(', ')}]`
+      );
+    }
+  }
+
   const now = new Date().toISOString();
   let updatedTitle = input.title ?? existing.title;
   let updatedDeadline = input.deadline ?? existing.deadline;
@@ -290,9 +330,11 @@ export function updateTask(input: UpdateTaskInput, db: Database.Database = getDb
 
   // Append audit log for update
   const eventDetails = [];
-  if (input.status && input.status !== existing.status) eventDetails.push(`status changed from ${existing.status} to ${input.status}`);
+  if (input.status && input.status !== existing.status)
+    eventDetails.push(`status changed from ${existing.status} to ${input.status}`);
   if (input.title && input.title !== existing.title) eventDetails.push(`title updated`);
-  if (input.deadline && input.deadline !== existing.deadline) eventDetails.push(`deadline updated to ${input.deadline}`);
+  if (input.deadline && input.deadline !== existing.deadline)
+    eventDetails.push(`deadline updated to ${input.deadline}`);
   if (input.depends_on) eventDetails.push(`dependencies updated`);
 
   const auditEvent = eventDetails.length > 0 ? `UPDATED: ${eventDetails.join(', ')}` : 'UPDATED';
@@ -302,6 +344,191 @@ export function updateTask(input: UpdateTaskInput, db: Database.Database = getDb
   refreshAllTaskStatuses(db);
 
   return getTask(input.id, db)!;
+}
+
+/**
+ * Propose an action on a task without mutating state.
+ * Returns proposal object and logs to audit trail.
+ */
+export function proposeAction(taskId: string, action: string, db: Database.Database = getDb()): ActionProposal {
+  const task = getTask(taskId, db);
+  if (!task) {
+    throw new Error(`Task with id "${taskId}" not found`);
+  }
+
+  const now = new Date().toISOString();
+  const requiresConfirmation = task.action_class === 'HUMAN_REQUIRED';
+  const reason = requiresConfirmation
+    ? `Task "${task.title}" is classified as HUMAN_REQUIRED (${task.category}). Explicit human confirmation is required before real-world execution.`
+    : `Task "${task.title}" is classified as AUTO. No explicit confirmation required.`;
+
+  // Append proposal event to audit log
+  addAuditLog(
+    taskId,
+    'ACTION_PROPOSED',
+    `Proposed action: "${action}". requires_confirmation=${requiresConfirmation}. Reason: ${reason}`,
+    now,
+    db
+  );
+
+  return {
+    task_id: taskId,
+    action,
+    requires_confirmation: requiresConfirmation,
+    reason,
+    task_title: task.title,
+    action_class: task.action_class,
+    proposed_at: now,
+  };
+}
+
+/**
+ * Confirm and execute a proposed action on a task.
+ * Only mutates state when confirmed === true.
+ * Records all attempts (confirmed or rejected) in audit log.
+ */
+export function confirmAction(
+  taskId: string,
+  action: string,
+  confirmed: boolean,
+  note?: string,
+  db: Database.Database = getDb()
+): ActionConfirmationResult {
+  const task = getTask(taskId, db);
+  if (!task) {
+    throw new Error(`Task with id "${taskId}" not found`);
+  }
+
+  const now = new Date().toISOString();
+
+  // If user declined or cancelled confirmation
+  if (!confirmed) {
+    addAuditLog(
+      taskId,
+      'ACTION_REJECTED',
+      note || `Action "${action}" was rejected by user. State remains unchanged at ${task.status}.`,
+      now,
+      db
+    );
+
+    return {
+      task_id: taskId,
+      action,
+      confirmed: false,
+      status: task.status,
+      message: `Action "${action}" was rejected. Task "${task.title}" status remains unchanged (${task.status}).`,
+      task,
+    };
+  }
+
+  // If confirmed, verify task is not blocked
+  if (task.status === 'blocked') {
+    const uncompletedDeps = task.depends_on.filter((depId) => {
+      const dep = getTask(depId, db);
+      return !dep || dep.status !== 'done';
+    });
+
+    addAuditLog(
+      taskId,
+      'ACTION_BLOCKED',
+      `Confirmed action "${action}" could not proceed because task is blocked by unfinished prerequisite tasks: [${uncompletedDeps.join(', ')}]`,
+      now,
+      db
+    );
+
+    throw new Error(
+      `Cannot execute confirmed action "${action}" on task "${taskId}": task is blocked by incomplete prerequisite tasks: [${uncompletedDeps.join(', ')}]`
+    );
+  }
+
+  // Determine mutation based on action
+  // For fee payments, project submissions, or mark_done, advance status to 'done'
+  const updated = updateTask(
+    {
+      id: taskId,
+      status: 'done',
+      note: note || `Action "${action}" confirmed by user and executed.`,
+      bypass_human_guard: true,
+    },
+    db
+  );
+
+  addAuditLog(
+    taskId,
+    'ACTION_CONFIRMED',
+    note || `Action "${action}" confirmed by user and executed. Task transitioned to done.`,
+    now,
+    db
+  );
+
+  return {
+    task_id: taskId,
+    action,
+    confirmed: true,
+    status: updated.status,
+    message: `Action "${action}" confirmed and executed. Task "${updated.title}" marked as done.`,
+    task: updated,
+  };
+}
+
+/**
+ * Structured weekly brief:
+ * - tasks due in next 7 days
+ * - currently blocked tasks (and what's blocking them)
+ * - stale tasks
+ */
+export function getWeeklyBriefData(nowMs: number = Date.now(), db: Database.Database = getDb()): WeeklyBrief {
+  refreshAllTaskStatuses(db);
+  const allTasks = listTasks(undefined, db);
+
+  const sevenDaysFromNow = nowMs + 7 * 24 * 60 * 60 * 1000;
+
+  // 1. Tasks due in next 7 days (and not done)
+  const tasksDueSoon = allTasks.filter((t) => {
+    if (t.status === 'done') return false;
+    const deadlineMs = new Date(t.deadline).getTime();
+    return !isNaN(deadlineMs) && deadlineMs >= nowMs && deadlineMs <= sevenDaysFromNow;
+  });
+
+  // 2. Blocked tasks with blocker details
+  const blockedTasks: BlockedTaskInfo[] = allTasks
+    .filter((t) => t.status === 'blocked')
+    .map((t) => {
+      const blockers = t.depends_on
+        .map((depId) => {
+          const dep = allTasks.find((item) => item.id === depId);
+          return dep
+            ? { id: dep.id, title: dep.title, status: dep.status }
+            : { id: depId, title: 'Unknown task', status: 'open' as TaskStatus };
+        })
+        .filter((dep) => dep.status !== 'done');
+
+      return {
+        task: t,
+        blocked_by: blockers,
+      };
+    });
+
+  // 3. Stale tasks
+  const staleTasks = allTasks.filter((t) => t.status === 'stale');
+
+  // 4. Pending tasks requiring human confirmation
+  const pendingConfirmations = allTasks.filter((t) => t.status !== 'done' && t.action_class === 'HUMAN_REQUIRED');
+
+  return {
+    generated_at: new Date(nowMs).toISOString(),
+    tasks_due_soon: tasksDueSoon,
+    blocked_tasks: blockedTasks,
+    stale_tasks: staleTasks,
+    pending_confirmations: pendingConfirmations,
+    summary: {
+      total_open: allTasks.filter((t) => t.status !== 'done').length,
+      due_in_7_days: tasksDueSoon.length,
+      blocked: blockedTasks.length,
+      stale: staleTasks.length,
+      human_required: pendingConfirmations.length,
+    },
+  };
 }
 
 export function clearDatabase(db: Database.Database = getDb()): void {

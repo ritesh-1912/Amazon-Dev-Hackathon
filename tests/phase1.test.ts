@@ -66,6 +66,7 @@ describe('Phase 1 — MCP Server Core & Persistence', () => {
       id: 'parent-task',
       title: 'Literature Review Draft',
       category: 'project',
+      action_class: 'AUTO',
       deadline: new Date(Date.now() + 5 * 86400000).toISOString(),
     });
     expect(parentTask.status).toBe('open');
@@ -103,6 +104,7 @@ describe('Phase 1 — MCP Server Core & Persistence', () => {
       id: 'overdue-task',
       title: 'Late Lab Fee',
       category: 'fee',
+      action_class: 'AUTO',
       deadline: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
     });
 

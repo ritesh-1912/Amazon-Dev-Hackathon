@@ -160,9 +160,10 @@ npm test
   - SQLite persistence via `better-sqlite3`.
   - Strict JSON-RPC input validation with Zod.
   - Dependency resolution and demo seed script.
-- [ ] **Phase 2: Guarded Actions & Audit Trail**
+- [x] **Phase 2: Guarded Actions & Audit Trail**
   - Two-phase commit (`propose_action` / `confirm_action`).
   - Strict protection preventing direct status updates on `HUMAN_REQUIRED` tasks.
+  - Invariant guard refusing advancement of blocked tasks.
   - `get_weekly_brief` structured aggregator.
 - [ ] **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)**
   - Bedrock Runtime SDK calling Claude on Bedrock.

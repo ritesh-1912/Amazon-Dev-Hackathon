@@ -1,24 +1,20 @@
 # Campus Ops MCP
 
-> A stateful Model Context Protocol (MCP) server + simulated Alexa+ experience that manages a student's academic "ops" (assignments, fees, project milestones, library returns) — tracking task dependencies, preventing the advancement of blocked items, and enforcing human confirmation before state mutations.
+> A stateful Model Context Protocol (MCP) server + simulated Alexa+ experience that manages a student's academic "ops" (assignments, fees, project milestones, library returns) — tracking task dependencies, refusing to advance blocked items, and requiring explicit human confirmation before mutating real-world state.
 
 Built for the **Amazon Developer Hackathon 2026** (Alexa+ track — simulated experience path + AWS Builder mini-challenge with AWS Bedrock).
 
 ---
 
-## 📌 Project Overview
+## 📌 Problem Statement
 
-Students handle diverse, high-stakes deadlines across disparate systems: coursework, tuition/lab fees, group project milestones, and library returns. A mistake—such as prematurely marking a fee paid or attempting a project deliverable before prerequisite architecture is completed—causes cascading issues.
+Students juggle complex, high-stakes deadlines across disjointed university portals: course assignments on Canvas/Blackboard, tuition payments on Bursar systems, capstone deliverables on GitHub, and library book loans. 
 
-**Campus Ops MCP** addresses this by providing:
-1. **MCP Server Core**: Implements the official `@modelcontextprotocol/sdk` using the **Streamable HTTP transport** (spec 2025-11-25).
-2. **State & Dependency Engine**: Dynamic evaluation of tasks (`open`, `blocked`, `done`, `stale`) backed by persistent file-based SQLite.
-3. **Guarded Action Classification**:
-   - `AUTO`: Safe operations (e.g., reading tasks, updating routine assignments or notes).
-   - `HUMAN_REQUIRED`: Critical, real-world state alterations (e.g., fee payments, final project code submissions) require explicit two-phase confirmation (`propose_action` ➔ `confirm_action`).
-4. **Full Audit Trail**: Every status alteration and action proposal/confirmation is immutably logged with ISO timestamps.
-5. **AWS Bedrock Integration** *(Coming in Phase 3)*: Synthesizes structured task graphs into concise, calm natural-language briefs using Claude on Bedrock.
-6. **Simulated Alexa+ Interface** *(Coming in Phase 4)*: Next.js chat experience modeling conversational Alexa+ voice interactions and confirmation modals.
+When autonomous agents or assistants interact with these systems without constraints, two major failure modes occur:
+1. **Premature Action on Blocked Dependencies**: An agent attempts to submit or advance a deliverable whose prerequisites are incomplete (e.g. submitting capstone milestone code before the architecture specification is completed and approved).
+2. **Unguarded Real-World Mutations**: An agent autonomously performs irreversible or financial actions (e.g. marking tuition fees as paid or submitting final projects) without explicit student verification.
+
+**Campus Ops MCP** solves this by combining stateful dependency graph tracking, invariant status calculation, human-in-the-loop confirmation gates, and conversational AI briefing powered by AWS Bedrock.
 
 ---
 
@@ -26,10 +22,13 @@ Students handle diverse, high-stakes deadlines across disparate systems: coursew
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   Alexa+ Web Simulator                      │
-│        (Next.js App Router + Tailwind + UI Modals)          │
+│                 Alexa+ Web Simulator (Next.js)              │
+│  - Conversational Voice-Style Chat Interface                │
+│  - Natural Language Intent Router                           │
+│  - Guarded Action Confirmation Modal (Two-Phase Approval)   │
+│  - Live Task Board with Reactive Dependency Resolution      │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ Streamable HTTP (JSON-RPC)
+                               │ Streamable HTTP (JSON-RPC 2.0)
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Campus Ops MCP Server                    │
@@ -38,14 +37,14 @@ Students handle diverse, high-stakes deadlines across disparate systems: coursew
 │   Endpoints:                                                │
 │   - POST   /mcp      (JSON-RPC requests, session mgmt)      │
 │   - GET    /mcp      (SSE streams / notifications)          │
-│   - DELETE /mcp      (Session teardown)                     │
-│   - GET    /health   (Service diagnostics & health check)   │
+│   - DELETE /mcp      (Session termination)                  │
+│   - GET    /health   (Service diagnostics & status)         │
 │                                                             │
-│   Core Modules:                                             │
+│   Core Engines & Tool Registry:                             │
 │   ├── MCP Tool Registry (create_task, list_tasks, ...)      │
-│   ├── State Invariant Engine (blocked / stale resolver)     │
-│   ├── Action Guard (AUTO vs HUMAN_REQUIRED enforcement)     │
-│   └── Bedrock Client (Claude 3 on AWS Bedrock)              │
+│   ├── Dynamic State Invariant Engine (open/blocked/stale)   │
+│   ├── Guarded Action Gatekeeper (AUTO vs HUMAN_REQUIRED)    │
+│   └── Bedrock AI Engine (Claude on AWS Bedrock)             │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
@@ -59,6 +58,31 @@ Students handle diverse, high-stakes deadlines across disparate systems: coursew
 
 ---
 
+## 🎯 How Alexa+ & MCP Requirements Are Satisfied
+
+| Requirement | Implementation in Campus Ops |
+|---|---|
+| **Official MCP Protocol** | Implements the official `@modelcontextprotocol/sdk` (v1.30.0) over **Streamable HTTP transport** conforming to the MCP 2025-11-25 specification. Supports `initialize`, `notifications/initialized`, and `tools/call`. |
+| **Simulated Alexa+ Interface** | Built with Next.js App Router, providing a conversational chat experience that simulates voice commands (`"What's due this week?"`, `"What's blocked?"`, `"Complete CS 301 design"`, `"Pay tuition fee"`). |
+| **Stateful Dependency Invariant** | Automatically computes whether tasks are `blocked` by unfinished prerequisites. The MCP server strictly refuses to advance blocked tasks. |
+| **Guarded Actions (`HUMAN_REQUIRED`)** | State mutations affecting money or academic submissions are classified as `HUMAN_REQUIRED`. The server exposes `propose_action` which returns `requires_confirmation: true`. The web simulator displays an interactive modal dialog: *"Confirm: mark [Task] as paid? [Confirm] [Cancel]"*. Only `confirm_action(confirmed: true)` mutates state. |
+| **Immutable Audit Trail** | Every action proposal, confirmation, rejection, and status transition is recorded in the SQLite audit log with ISO timestamps. |
+
+---
+
+## ☁️ How AWS Bedrock Is Used (AWS Builder Challenge)
+
+Campus Ops MCP integrates **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
+
+### Workflow:
+1. When the student asks *"What's due this week?"* or invokes the `get_smart_brief` tool, the server aggregates the weekly schedule (tasks due in 7 days, currently blocked tasks and their blockers, and overdue items).
+2. The structured JSON graph is sent to Claude on Bedrock with a calm operational assistant persona.
+3. Claude synthesizes the data into a calm, concise 3-4 sentence spoken brief: what is due soon, what is blocked and why, and what requires student confirmation.
+4. **Graceful Fallback**: If AWS credentials are not configured or rate limits are reached, the engine automatically falls back to a deterministic structured summary without server interruption.
+5. See [`docs/aws-builder.md`](docs/aws-builder.md) for full architectural documentation of the AWS Bedrock integration.
+
+---
+
 ## 📊 Data Model
 
 ```typescript
@@ -67,7 +91,7 @@ interface Task {
   title: string;
   category: "assignment" | "fee" | "project" | "library" | "other";
   deadline: string; // ISO-8601 date string
-  depends_on: string[]; // IDs of prerequisite tasks that must be 'done'
+  depends_on: string[]; // IDs of prerequisite tasks that must be 'done' first
   status: "open" | "blocked" | "done" | "stale";
   action_class: "AUTO" | "HUMAN_REQUIRED";
   audit_log: {
@@ -78,86 +102,127 @@ interface Task {
 }
 ```
 
-### Dynamic Status Invariants
-- **`done`**: The task has been completed.
-- **`blocked`**: Any task listed in `depends_on` is not in the `done` state.
-- **`stale`**: Deadline has passed (`deadline < now`) and the task is still not `done`.
-- **`open`**: The task is unblocked, within deadline, and ready for work.
+### Dynamic Invariants:
+- **`done`**: The task has been completed and executed.
+- **`blocked`**: One or more tasks listed in `depends_on` are not yet `done`.
+- **`stale`**: Deadline has passed (`deadline < now`) and the task is not `done`.
+- **`open`**: The task is unblocked, deadline is in the future, and ready for action.
 
 ---
 
 ## 🛠️ MCP Tools
 
-| Tool | Purpose |
-|------|---------|
-| `create_task` | Creates an academic task with category, deadline, dependencies, and action class. |
-| `list_tasks` | Returns all tasks with dynamically computed statuses, with optional `status` and `category` filters. |
-| `get_task` | Retrieves a specific task by ID including its full audit trail. |
-| `update_task` | Updates task fields and status, cascading dependency unblocking. |
-| `propose_action` | *(Phase 2)* Generates a proposal object for `HUMAN_REQUIRED` actions without mutating state. |
-| `confirm_action` | *(Phase 2)* Mutates state for `HUMAN_REQUIRED` actions upon human confirmation (`confirmed: true`). |
-| `get_weekly_brief` | *(Phase 2)* Gathers tasks due in the next 7 days, blocked tasks, and stale items. |
-| `get_smart_brief` | *(Phase 3)* Translates the weekly brief into spoken-style prose via AWS Bedrock Claude. |
+| Tool | Parameters | Description |
+|---|---|---|
+| `create_task` | `title`, `category`, `deadline`, `depends_on`, `action_class` | Creates a new academic operation item. |
+| `list_tasks` | `status` *(optional)*, `category` *(optional)* | Returns all tasks with dynamically evaluated statuses and dependencies. |
+| `get_task` | `id` | Retrieves full task details and immutable audit log. |
+| `update_task` | `id`, `status`, `title`, `deadline`, `depends_on`, `note` | Updates task metadata. Direct status updates on `HUMAN_REQUIRED` tasks are blocked. |
+| `propose_action` | `task_id`, `action` | For `HUMAN_REQUIRED` tasks, returns `{ requires_confirmation: true, reason }` without mutating state. |
+| `confirm_action` | `task_id`, `action`, `confirmed`, `note` | Only tool capable of mutating `HUMAN_REQUIRED` tasks. Enforces invariant that blocked tasks cannot be confirmed. |
+| `get_weekly_brief` | *(none)* | Structured data aggregator of upcoming deadlines, blockers, and overdue tasks. |
+| `get_smart_brief` | *(none)* | Bedrock-powered conversational voice briefing synthesized by Claude. |
 
 ---
 
-## 🚀 Getting Started
+## 💻 Local Quickstart
 
 ### Prerequisites
-- Node.js `>= 20` (tested on Node v24)
+- Node.js `>= 20` (Node 22 LTS or Node 24 recommended)
 - npm `>= 10`
 
-### Installation
+### 1. Clone & Install
 ```bash
 git clone https://github.com/ritesh-1912/Amazon-Dev-Hackathon.git
 cd Amazon-Dev-Hackathon
 npm install
+cd web && npm install && cd ..
 ```
 
-### Environment Configuration
-Copy the example environment file:
+### 2. Configure Environment
 ```bash
 cp .env.example .env
 ```
-Default parameters in `.env`:
+Optional: Add your AWS credentials to `.env` to enable live Bedrock Claude generation:
 ```ini
-PORT=3001
-NODE_ENV=development
-DB_PATH=./data/campus_ops.db
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 ```
+*(If AWS credentials are omitted, the system operates seamlessly with deterministic brief generation).*
 
-### Seed Demo Data
-Populates the SQLite database with 8 realistic demo tasks (assignments, tuition fees, capstone milestones, library returns):
+### 3. Seed Demo Data
 ```bash
 npm run seed
 ```
 
-### Run Server Locally
+### 4. Run Locally
+In terminal 1 (MCP Server on port 3001):
 ```bash
-# Development (with hot-reload)
 npm run dev
-
-# Production build & run
-npm run build
-npm run start
 ```
 
-Once running:
-- **MCP Endpoint**: `http://localhost:3001/mcp`
-- **Health Check**: `http://localhost:3001/health`
-
-### Run Web Simulator (Alexa+ Interface)
+In terminal 2 (Next.js Web Simulator on port 3000):
 ```bash
 cd web
-npm install
 npm run dev
 ```
-Open `http://localhost:3000` to interact with the conversational Alexa+ simulator and the live task board.
 
-### Run Automated Tests
+Open **`http://localhost:3000`** in your browser to interact with the Alexa+ Web Simulator and the live task board.
+
+### 5. Run Automated Tests
 ```bash
 npm test
 ```
+All 19 test cases verify:
+- SQLite persistence and crash recovery
+- Dependency blocking and cascading unblocking
+- Human-in-the-loop action guards
+- Rejection of invalid status changes on `HUMAN_REQUIRED` tasks
+- AWS Bedrock Claude synthesis and graceful fallback
+- Full Streamable HTTP MCP JSON-RPC protocol round-trips
+
+---
+
+## 🌐 Production Deployment Guide
+
+### Deploying MCP Server (Render / Fly.io / Docker)
+
+#### Option A: Deploy to Render
+The repository includes a ready-to-use [`render.yaml`](render.yaml) blueprint:
+1. Push this repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com/), select **New ➔ Blueprint**.
+3. Connect your repository. Render detects `render.yaml` and deploys the `campus-ops-mcp` web service.
+4. Set optional environment variables: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+5. Your MCP server will be live at `https://<service-name>.onrender.com`. Health endpoint: `/health`.
+
+#### Option B: Deploy to Fly.io
+The repository includes a [`fly.toml`](fly.toml) and multi-stage [`Dockerfile`](Dockerfile):
+```bash
+fly launch
+fly deploy
+```
+
+---
+
+### Deploying Web Simulator (Vercel)
+
+The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
+1. In the [Vercel Dashboard](https://vercel.com/), click **Add New ➔ Project**.
+2. Select the repository and set the **Root Directory** to `web`.
+3. Under **Environment Variables**, add:
+   - `MCP_SERVER_URL`: `https://<your-mcp-server>.onrender.com`
+   - `NEXT_PUBLIC_MCP_SERVER_URL`: `https://<your-mcp-server>.onrender.com`
+4. Click **Deploy**. Vercel will build and host the Next.js application.
+
+---
+
+## 🔒 Security & Secrets Hygiene
+
+- No credentials, tokens, or private keys are committed to Git.
+- Both root `.gitignore` and `web/.gitignore` prevent `.env`, `.env.local`, SQLite databases (`*.db`), and build artifacts from tracking.
+- Template configurations are provided in `.env.example` and `web/.env.example`.
 
 ---
 
@@ -176,12 +241,12 @@ npm test
 - [x] **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)**
   - Bedrock Runtime SDK calling Claude on Bedrock.
   - `get_smart_brief` tool with graceful fallback.
-  - Documentation at `docs/aws-builder.md`.
+  - Architectural documentation in `docs/aws-builder.md`.
 - [x] **Phase 4: Web Simulator (Alexa+ Experience)**
-  - Next.js chat interface modeling Alexa+ voice interactions.
+  - Next.js App Router chat interface modeling Alexa+ voice interactions.
   - Interactive confirmation modal for guarded human-in-the-loop actions.
   - Real-time task status panel with dynamic dependency resolution.
-- [ ] **Phase 5: Deployment & Polish**
-  - MCP server deployment.
-  - Web simulator deployment on Vercel.
-
+- [x] **Phase 5: Deployment & Polish**
+  - Production configurations (`Dockerfile`, `render.yaml`, `fly.toml`, `web/vercel.json`).
+  - Complete architecture, security, and deployment documentation.
+  - Zero uncommitted secrets; clean environment templates.

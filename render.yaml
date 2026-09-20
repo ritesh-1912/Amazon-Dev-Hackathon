@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: campus-ops-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx tsx scripts/seed.ts && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_PATH
+        value: ./data/campus_ops.db
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: BEDROCK_MODEL_ID
+        value: anthropic.claude-3-haiku-20240307-v1:0

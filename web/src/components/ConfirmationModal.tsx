@@ -46,7 +46,7 @@ export default function ConfirmationModal({
 
         {/* Description / Explanation */}
         <p className="text-xs text-center text-zinc-400 mb-6 leading-relaxed">
-          This task is classified as <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase">HUMAN_REQUIRED</span>. It alters real-world academic/financial state and requires your explicit confirmation before mutating.
+          Task is <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase">HUMAN_REQUIRED</span>. State mutation requires operator confirmation.
         </p>
 
         {/* Action Buttons */}

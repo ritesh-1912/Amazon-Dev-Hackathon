@@ -25,7 +25,7 @@ async function callMcpTool(tool: string, args: Record<string, unknown> = {}): Pr
 }
 
 function extractTextFromResult(result: any): string {
-  if (!result?.content) return 'No response from MCP tool';
+  if (!result?.content) return 'No response received from tool.';
   return result.content
     .filter((c: any) => c.type === 'text')
     .map((c: any) => c.text)
@@ -37,7 +37,7 @@ function formatToolResponse(tool: string, rawText: string): string {
     const parsed = JSON.parse(rawText);
 
     if (tool === 'list_tasks' && Array.isArray(parsed)) {
-      if (parsed.length === 0) return 'No tasks found matching that filter.';
+      if (parsed.length === 0) return 'No matching tasks.';
       return parsed
         .map((t: any) => {
           const statusTag = `[${t.status.toUpperCase()}]`;
@@ -54,21 +54,21 @@ function formatToolResponse(tool: string, rawText: string): string {
     if (tool === 'get_task' && parsed.id) {
       const t = parsed;
       const guardTag = t.action_class === 'HUMAN_REQUIRED' ? 'HUMAN_REQUIRED (Guarded)' : 'AUTO';
-      return `### Task Details: ${t.title}\n\n- **ID**: \`${t.id}\`\n- **Category**: ${t.category}\n- **Status**: ${t.status.toUpperCase()}\n- **Action Class**: ${guardTag}\n- **Deadline**: ${new Date(t.deadline).toLocaleString()}\n- **Dependencies**: ${t.depends_on?.length ? t.depends_on.join(', ') : 'None'}`;
+      return `### Task: ${t.title}\n\n- **ID**: \`${t.id}\`\n- **Category**: ${t.category}\n- **Status**: ${t.status.toUpperCase()}\n- **Action Class**: ${guardTag}\n- **Deadline**: ${new Date(t.deadline).toLocaleString()}\n- **Dependencies**: ${t.depends_on?.length ? t.depends_on.join(', ') : 'None'}`;
     }
 
     if (tool === 'confirm_action' && parsed.confirmed !== undefined) {
       if (parsed.confirmed) {
-        return `**Action Confirmed & Executed**\n\n${parsed.message || 'Task state updated.'}\n\nTask \`${parsed.task_id}\` status updated to **DONE**. Recorded in audit trail.`;
+        return `**Action Confirmed**\n\nTask \`${parsed.task_id}\` marked as DONE. Recorded in audit log.`;
       } else {
-        return `**Action Cancelled**\n\n${parsed.message || 'Task state was left unchanged.'}\n\nNo modifications applied to task \`${parsed.task_id}\`. Recorded rejection in audit trail.`;
+        return `**Action Cancelled**\n\nTask \`${parsed.task_id}\` unchanged. Recorded in audit log.`;
       }
     }
 
     if (tool === 'get_smart_brief' || tool === 'get_weekly_brief') {
       if (typeof parsed === 'string') return parsed;
       if (parsed.summary) return parsed.summary;
-      let out = '### Weekly Academic Ops Brief\n\n';
+      let out = '### Operations Brief\n\n';
       if (parsed.open_tasks?.length) {
         out += `**Open Tasks (${parsed.open_tasks.length})**:\n${parsed.open_tasks.map((t: any) => `- **${t.title}** — due ${new Date(t.deadline).toLocaleDateString()}`).join('\n')}\n\n`;
       }
@@ -96,7 +96,7 @@ export default function Home() {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Welcome to **Campus Ops** — your academic operations assistant powered by Alexa+ and AWS Bedrock.\n\nI monitor your course assignments, tuition fees, project dependencies, and library loans. I keep you informed of upcoming deadlines and protect real-world mutations with human confirmation gates.\n\nAsk a question or click a workflow step below:\n- **"What\'s due this week?"** (Bedrock Smart Brief)\n- **"What\'s blocked?"** (Dependency check)\n- **"Complete CS 301 design"** (Resolve prerequisite)\n- **"Pay tuition fee"** (Human-guarded action)',
+        '**Campus Ops System Online**\n\nAcademic operations engine active. Monitored records: assignments, fees, dependencies, loans.\n\nCommands:\n- **"What\'s due this week?"** — Operational summary\n- **"What\'s blocked?"** — Dependency check\n- **"Complete CS 301 design"** — Resolve prerequisite\n- **"Pay tuition fee"** — Guarded mutation',
       timestamp: new Date(),
     },
   ]);
@@ -193,7 +193,7 @@ export default function Home() {
 
           addMessage({
             role: 'assistant',
-            content: `**Action Requires Confirmation**\n\nExplicit authorization required before mutating state:\n\n> **Task**: ${taskTitle} (\`${taskId}\`)\n> **Action**: \`${action}\`\n> **Reason**: ${parsed.reason}\n\nPlease confirm or cancel via the prompt dialog.`,
+            content: `**Confirmation Required**\n\nAuthorization required for state mutation:\n\n> **Task**: ${taskTitle} (\`${taskId}\`)\n> **Action**: \`${action}\`\n> **Reason**: ${parsed.reason}\n\nConfirm or cancel in dialog.`,
           });
 
           await refreshTasks();
@@ -206,13 +206,13 @@ export default function Home() {
             task_id: parsed.task_id,
             action: parsed.action,
             confirmed: true,
-            note: 'Auto action completed via voice assistant.',
+            note: 'Auto action executed.',
           });
           const confirmText = extractTextFromResult(confirmRes);
           const formatted = formatToolResponse('confirm_action', confirmText);
           addMessage({
             role: 'assistant',
-            content: `**Executed Auto Action**\n\n${formatted}`,
+            content: `**Auto Action Executed**\n\n${formatted}`,
           });
           await refreshTasks();
           return;
@@ -251,7 +251,7 @@ export default function Home() {
         task_id: taskId,
         action,
         confirmed: true,
-        note: 'Confirmed by student in Alexa+ simulator dialog.',
+        note: 'Confirmed by operator.',
       });
       const rawText = extractTextFromResult(result);
       const formatted = formatToolResponse('confirm_action', rawText);
@@ -280,7 +280,7 @@ export default function Home() {
         task_id: taskId,
         action,
         confirmed: false,
-        note: 'Cancelled by student in Alexa+ simulator dialog.',
+        note: 'Cancelled by operator.',
       });
       const rawText = extractTextFromResult(result);
       const formatted = formatToolResponse('confirm_action', rawText);
@@ -401,7 +401,7 @@ export default function Home() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Alexa+ (e.g. 'What's due this week?', 'Complete dependency', 'Mark fees paid')..."
+              placeholder="Enter command (e.g. 'What is due this week', 'Complete dependency', 'Mark fees paid')..."
               className="flex-1 bg-transparent text-xs text-zinc-100 placeholder:text-zinc-500 outline-none"
               disabled={isLoading}
             />

@@ -6,10 +6,18 @@ const rawServerUrl =
   'http://localhost:3001';
 const MCP_SERVER_URL = rawServerUrl.replace(/\/+$/, '');
 
+// Vercel Serverless Function execution timeout (up to 60s on Hobby plan)
+export const maxDuration = 60;
+
 // Server-side session management for MCP
 let mcpSessionId: string | null = null;
 
-async function mcpRequest(method: string, params: Record<string, unknown> = {}, id?: number): Promise<any> {
+async function mcpRequest(
+  method: string,
+  params: Record<string, unknown> = {},
+  id?: number,
+  timeoutMs: number = 45000
+): Promise<any> {
   const requestId = id ?? Math.floor(Math.random() * 100000);
   const isNotification = !id && method.startsWith('notifications/');
 
@@ -32,60 +40,80 @@ async function mcpRequest(method: string, params: Record<string, unknown> = {}, 
     headers['mcp-session-id'] = mcpSessionId;
   }
 
-  const res = await fetch(`${MCP_SERVER_URL}/mcp`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => res.statusText);
-    throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
-  }
+  try {
+    const res = await fetch(`${MCP_SERVER_URL}/mcp`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  const newSessionId = res.headers.get('mcp-session-id');
-  if (newSessionId) {
-    mcpSessionId = newSessionId;
-  }
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => res.statusText);
+      throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
+    }
 
-  const contentType = res.headers.get('content-type') || '';
+    const newSessionId = res.headers.get('mcp-session-id');
+    if (newSessionId) {
+      mcpSessionId = newSessionId;
+    }
 
-  if (contentType.includes('text/event-stream')) {
-    const text = await res.text();
-    const lines = text.split('\n');
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(line.slice(6));
-          if (data.id === requestId || data.result || data.error) {
-            return data;
+    const contentType = res.headers.get('content-type') || '';
+
+    if (contentType.includes('text/event-stream')) {
+      const text = await res.text();
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.id === requestId || data.result || data.error) {
+              return data;
+            }
+          } catch {
+            // skip non-JSON lines
           }
-        } catch {
-          // skip non-JSON lines
         }
       }
+      return null;
     }
-    return null;
-  }
 
-  if (isNotification) {
-    return null;
-  }
+    if (isNotification) {
+      return null;
+    }
 
-  return res.json();
+    return await res.json();
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      throw new Error(
+        `Request timed out after ${Math.round(timeoutMs / 1000)}s while waiting for MCP server (Render cold start)`
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function ensureInitialized(): Promise<void> {
   if (mcpSessionId) return;
 
-  const initResponse = await mcpRequest('initialize', {
-    protocolVersion: '2025-11-25',
-    capabilities: {},
-    clientInfo: { name: 'campus-ops-web-simulator', version: '1.0.0' },
-  }, 1);
+  const initResponse = await mcpRequest(
+    'initialize',
+    {
+      protocolVersion: '2025-11-25',
+      capabilities: {},
+      clientInfo: { name: 'campus-ops-web-simulator', version: '1.0.0' },
+    },
+    1,
+    45000 // at least 40s to tolerate Render cold start
+  );
 
   if (initResponse?.result) {
-    await mcpRequest('notifications/initialized', {});
+    await mcpRequest('notifications/initialized', {}, undefined, 10000);
   }
 }
 
@@ -102,7 +130,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const response = await mcpRequest('tools/call', {
       name: tool,
       arguments: args || {},
-    });
+    }, undefined, 45000);
 
     if (response?.result) {
       return NextResponse.json({ result: response.result });

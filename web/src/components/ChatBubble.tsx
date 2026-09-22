@@ -72,7 +72,7 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-export function TypingIndicator() {
+export function TypingIndicator({ text }: { text?: string } = {}) {
   return (
     <div className="flex justify-start mb-4 animate-fade-in-up">
       <div className="bg-[#121215] border border-zinc-800 rounded-2xl rounded-bl-sm px-4 py-3">
@@ -82,10 +82,17 @@ export function TypingIndicator() {
             Campus Ops
           </span>
         </div>
-        <div className="flex gap-1.5 py-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
+        <div className="flex items-center gap-2.5 py-1">
+          <div className="flex gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
+            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
+            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 typing-dot" />
+          </div>
+          {text && (
+            <span className="text-xs text-zinc-400 font-mono">
+              {text}
+            </span>
+          )}
         </div>
       </div>
     </div>

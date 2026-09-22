@@ -132,8 +132,12 @@ export default function TaskSidebar({
         )}
 
         {loading && tasks.length === 0 && (
-          <div className="text-center text-zinc-500 text-xs py-12 px-4 leading-relaxed font-mono">
-            Syncing task board...
+          <div className="text-center text-zinc-400 text-xs py-12 px-4 leading-relaxed font-mono space-y-2">
+            <div className="inline-block w-4 h-4 border-2 border-zinc-500 border-t-zinc-200 rounded-full animate-spin" />
+            <div className="text-zinc-200 font-medium">Waking up the MCP server...</div>
+            <div className="text-[11px] text-zinc-500 leading-normal">
+              This can take up to 30s on first load while the backend instance spins up.
+            </div>
           </div>
         )}
 

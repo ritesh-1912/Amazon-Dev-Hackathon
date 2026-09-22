@@ -115,6 +115,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -150,6 +151,7 @@ export default function Home() {
           }))
         );
         setConnectionError(null);
+        setIsInitialLoad(false);
         return;
       }
     } catch (err: any) {
@@ -370,9 +372,21 @@ export default function Home() {
 
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800">
-              <span className={`w-1.5 h-1.5 rounded-full ${connectionError ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  connectionError
+                    ? 'bg-rose-500'
+                    : isInitialLoad && tasksLoading
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-emerald-500'
+                }`}
+              />
               <span className="text-xs text-zinc-400 font-mono">
-                {connectionError ? 'MCP Offline' : 'MCP Connected'}
+                {connectionError
+                  ? 'MCP Offline'
+                  : isInitialLoad && tasksLoading
+                    ? 'Waking Server...'
+                    : 'MCP Connected'}
               </span>
             </div>
             <button
@@ -406,12 +420,30 @@ export default function Home() {
           </div>
         )}
 
+        {/* Cold-start Loading Banner */}
+        {isInitialLoad && tasksLoading && !connectionError && (
+          <div className="px-6 py-2.5 bg-zinc-900/70 border-b border-zinc-800 flex items-center gap-2.5 text-xs font-mono text-zinc-300">
+            <div className="w-3.5 h-3.5 border-2 border-zinc-500 border-t-amber-400 rounded-full animate-spin flex-shrink-0" />
+            <span>
+              Waking up the MCP server (this can take up to 30s on first load)...
+            </span>
+          </div>
+        )}
+
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {messages.map((msg) => (
             <ChatBubble key={msg.id} message={msg} />
           ))}
-          {isLoading && <TypingIndicator />}
+          {isLoading && (
+            <TypingIndicator
+              text={
+                isInitialLoad
+                  ? 'Waking up the MCP server (this can take up to 30s on first load)...'
+                  : undefined
+              }
+            />
+          )}
           <div ref={messagesEndRef} />
         </div>
 

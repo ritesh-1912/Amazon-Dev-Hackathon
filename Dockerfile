@@ -26,6 +26,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src ./src
 COPY scripts ./scripts
 
 # Ensure data directory exists
@@ -37,4 +38,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:${PORT}/health || exit 1
 
-CMD ["sh", "-c", "npx tsx scripts/seed.ts && node dist/index.js"]
+CMD ["sh", "-c", "node dist/seed.js && node dist/index.js"]

@@ -112,6 +112,12 @@ export default function TaskSidebar({
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+        {loading && tasks.length === 0 && (
+          <div className="text-center text-zinc-500 text-xs py-12 px-4 leading-relaxed font-mono">
+            Syncing task board...
+          </div>
+        )}
+
         {tasks.length === 0 && !loading && (
           <div className="text-center text-zinc-500 text-xs py-12 px-4 leading-relaxed font-mono">
             No tasks found.

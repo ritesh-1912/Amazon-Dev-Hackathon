@@ -118,7 +118,7 @@ export default function Home() {
   }, [messages, scrollToBottom]);
 
   // Refresh tasks list from MCP server
-  const refreshTasks = useCallback(async () => {
+  const refreshTasks = useCallback(async (retryCount = 0) => {
     setTasksLoading(true);
     try {
       const result = await callMcpTool('list_tasks', {});
@@ -137,9 +137,14 @@ export default function Home() {
             audit_log: t.audit_log || [],
           }))
         );
+        return;
       }
     } catch (err) {
       console.error('Failed to load tasks:', err);
+      // If initial fetch failed, retry once after 3s (handles backend cold-start)
+      if (retryCount === 0) {
+        setTimeout(() => refreshTasks(1), 3000);
+      }
     } finally {
       setTasksLoading(false);
     }

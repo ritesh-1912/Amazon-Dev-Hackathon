@@ -38,6 +38,11 @@ async function mcpRequest(method: string, params: Record<string, unknown> = {}, 
     body: JSON.stringify(body),
   });
 
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => res.statusText);
+    throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
+  }
+
   const newSessionId = res.headers.get('mcp-session-id');
   if (newSessionId) {
     mcpSessionId = newSessionId;
@@ -109,7 +114,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ result: { isError: true, content: [{ type: 'text', text: 'No response from MCP server' }] } });
   } catch (err: any) {
-    console.error('API route error:', err);
+    console.error(`[MCP Connection Error] Failed to reach MCP server at ${MCP_SERVER_URL}:`, err);
     // Reset session on connection failure so next call re-initializes
     mcpSessionId = null;
     return NextResponse.json(

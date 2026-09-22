@@ -41,11 +41,13 @@ export default function TaskSidebar({
   tasks,
   onRefresh,
   loading,
+  connectionError,
   onSelectTask,
 }: {
   tasks: Task[];
   onRefresh: () => void;
   loading: boolean;
+  connectionError?: string | null;
   onSelectTask?: (task: Task) => void;
 }) {
   const openCount = tasks.filter((t) => t.status === 'open').length;
@@ -112,13 +114,30 @@ export default function TaskSidebar({
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+        {connectionError && (
+          <div className="p-3 rounded-md bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs font-mono leading-relaxed">
+            <div className="font-semibold text-rose-200 mb-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+              <span>Connection Failed</span>
+            </div>
+            <p className="text-[11px] text-rose-300/80 break-words mb-2">{connectionError}</p>
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="text-[11px] px-2 py-1 rounded bg-rose-900/60 hover:bg-rose-800 text-rose-100 border border-rose-700/60 transition-colors cursor-pointer"
+            >
+              Retry Sync
+            </button>
+          </div>
+        )}
+
         {loading && tasks.length === 0 && (
           <div className="text-center text-zinc-500 text-xs py-12 px-4 leading-relaxed font-mono">
             Syncing task board...
           </div>
         )}
 
-        {tasks.length === 0 && !loading && (
+        {tasks.length === 0 && !loading && !connectionError && (
           <div className="text-center text-zinc-500 text-xs py-12 px-4 leading-relaxed font-mono">
             No tasks found.
           </div>

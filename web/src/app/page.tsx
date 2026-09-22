@@ -19,8 +19,19 @@ async function callMcpTool(tool: string, args: Record<string, unknown> = {}): Pr
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tool, args }),
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`HTTP ${res.status}: Can't reach the MCP server — check MCP_SERVER_URL`);
+  }
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `HTTP ${res.status}: Can't reach the MCP server — check MCP_SERVER_URL`);
+  }
+  if (data.result?.isError) {
+    const errorMsg = data.result.content?.[0]?.text || "Can't reach the MCP server — check MCP_SERVER_URL";
+    throw new Error(errorMsg);
+  }
   return data.result;
 }
 
@@ -104,6 +115,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -137,10 +149,12 @@ export default function Home() {
             audit_log: t.audit_log || [],
           }))
         );
+        setConnectionError(null);
         return;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load tasks:', err);
+      setConnectionError(err?.message || "Can't reach the MCP server — check MCP_SERVER_URL");
       // If initial fetch failed, retry once after 3s (handles backend cold-start)
       if (retryCount === 0) {
         setTimeout(() => refreshTasks(1), 3000);
@@ -178,6 +192,7 @@ export default function Home() {
 
       // Call MCP tool via server proxy
       const result = await callMcpTool(intent.tool, intent.args);
+      setConnectionError(null);
       const rawText = extractTextFromResult(result);
 
       // Check if this was a propose_action call
@@ -213,6 +228,7 @@ export default function Home() {
             confirmed: true,
             note: 'Auto action executed.',
           });
+          setConnectionError(null);
           const confirmText = extractTextFromResult(confirmRes);
           const formatted = formatToolResponse('confirm_action', confirmText);
           addMessage({
@@ -233,6 +249,9 @@ export default function Home() {
       // Refresh sidebar state
       await refreshTasks();
     } catch (err: any) {
+      if (err?.message?.includes('MCP') || err?.message?.includes('reach') || err?.message?.includes('check MCP_SERVER_URL')) {
+        setConnectionError(err.message);
+      }
       addMessage({
         role: 'system',
         content: `Error: ${err.message}`,
@@ -258,11 +277,15 @@ export default function Home() {
         confirmed: true,
         note: 'Confirmed by operator.',
       });
+      setConnectionError(null);
       const rawText = extractTextFromResult(result);
       const formatted = formatToolResponse('confirm_action', rawText);
       addMessage({ role: 'assistant', content: formatted });
       await refreshTasks();
     } catch (err: any) {
+      if (err?.message?.includes('MCP') || err?.message?.includes('reach') || err?.message?.includes('check MCP_SERVER_URL')) {
+        setConnectionError(err.message);
+      }
       addMessage({
         role: 'system',
         content: `Confirmation failed: ${err.message}`,
@@ -287,11 +310,15 @@ export default function Home() {
         confirmed: false,
         note: 'Cancelled by operator.',
       });
+      setConnectionError(null);
       const rawText = extractTextFromResult(result);
       const formatted = formatToolResponse('confirm_action', rawText);
       addMessage({ role: 'assistant', content: formatted });
       await refreshTasks();
     } catch (err: any) {
+      if (err?.message?.includes('MCP') || err?.message?.includes('reach') || err?.message?.includes('check MCP_SERVER_URL')) {
+        setConnectionError(err.message);
+      }
       addMessage({
         role: 'system',
         content: `Cancellation failed: ${err.message}`,
@@ -343,8 +370,10 @@ export default function Home() {
 
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-zinc-400 font-mono">MCP Connected</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${connectionError ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              <span className="text-xs text-zinc-400 font-mono">
+                {connectionError ? 'MCP Offline' : 'MCP Connected'}
+              </span>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -354,6 +383,28 @@ export default function Home() {
             </button>
           </div>
         </header>
+
+        {/* Connection Failure Banner */}
+        {connectionError && (
+          <div className="px-6 py-2.5 bg-rose-950/40 border-b border-rose-900/60 flex items-center justify-between gap-4 text-xs font-mono text-rose-300">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 animate-pulse" />
+              <span className="truncate">
+                Can&apos;t reach the MCP server — check MCP_SERVER_URL
+              </span>
+              <span className="hidden md:inline text-[11px] text-rose-400/70 truncate">
+                ({connectionError})
+              </span>
+            </div>
+            <button
+              onClick={() => refreshTasks()}
+              disabled={tasksLoading}
+              className="px-2.5 py-1 rounded bg-rose-900/50 hover:bg-rose-800/80 text-rose-200 border border-rose-700/60 text-xs whitespace-nowrap transition-colors cursor-pointer flex-shrink-0"
+            >
+              {tasksLoading ? 'Connecting...' : 'Retry'}
+            </button>
+          </div>
+        )}
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -427,6 +478,7 @@ export default function Home() {
           tasks={tasks}
           onRefresh={refreshTasks}
           loading={tasksLoading}
+          connectionError={connectionError}
           onSelectTask={(task) => {
             const prompt = `Show details for ${task.id}`;
             setInputValue(prompt);

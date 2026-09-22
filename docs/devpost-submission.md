@@ -16,6 +16,17 @@ A stateful Model Context Protocol (MCP) server + Alexa+ voice experience that ma
 
 ---
 
+## Testing Instructions
+
+To verify the project in under 2 minutes:
+
+1. Open the live simulator: [https://campusmcp.vercel.app](https://campusmcp.vercel.app).
+2. Note: the MCP server is on Render's free tier and may take up to 30s to wake up on first request — the UI will show a "waking up" message during this, this is expected.
+3. Try: "What's due this week?", then "What's blocked?", then "Complete CS 301 design", then "What's blocked?" again to see the dependent task unblock, then "Pay tuition fee" to see the confirmation modal.
+4. Optionally hit [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health) directly to see the MCP server's spec version and status independent of the UI.
+
+---
+
 ## Targeted Hackathon Tracks
 - **Alexa+ Track**: Simulated Experience Path (Conversational Next.js UI interacting with stateful MCP server).
 - **AWS Builder Mini-Challenge**: Live AWS Bedrock Runtime integration with Anthropic Claude for natural language intelligence and weekly briefs.

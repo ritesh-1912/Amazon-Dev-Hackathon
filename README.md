@@ -10,6 +10,7 @@ Built for the **Amazon Developer Hackathon 2026** (Alexa+ track: simulated exper
 - **Alexa+ Web Simulator**: [https://campusmcp.vercel.app](https://campusmcp.vercel.app)
 - **Campus Ops MCP Server**: [https://campus-ops-mcp-xlse.onrender.com](https://campus-ops-mcp-xlse.onrender.com)
 - **MCP Server Health Check**: [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health)
+- **Judge Testing Instructions**: [docs/TESTING.md](docs/TESTING.md) (2-minute verification guide)
 
 ---
 

@@ -36,16 +36,16 @@ In an academic operations system, the raw backend state is a complex relational 
 A voice interface like **Alexa+** cannot simply read out raw JSON or recite database rows without overwhelming the student with cognitive overhead.
 
 ### The Bedrock Solution
-Amazon Bedrock with Claude acts as an **intelligent operational synthesizer**:
+Amazon Bedrock with Claude acts as an **operational synthesizer**:
 1. **Context Comprehension**: Ingests the structured JSON output of `get_weekly_brief()` containing upcoming deadlines, blockers, and required confirmations.
-2. **Deterministic Persona**: Enforces a calm, concise spoken-brief persona:
+2. **Calm Persona**: Enforces a calm, concise spoken-brief persona:
    > *"You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts."*
 3. **Conversational Synthesis**: Produces 3–4 spoken-style sentences prioritizing immediate deadlines, unblocking steps, and pending approvals.
 
 ---
 
-## 4. Graceful Fallback & Production Reliability
+## 4. Graceful Fallback & Error Handling
 
 The server implements fault-tolerant fallback logic in `src/lib/bedrock.ts`:
 - If AWS credentials are not configured, network connectivity drops, or rate limits occur, the server logs an explicit `[AWS Bedrock Warning]` and returns a structured fallback brief.
-- The server **never crashes**, ensuring 100% operational uptime for the MCP server and Alexa+ frontend simulator.
+- The server won't crash if Bedrock is unreachable; it returns a structured fallback brief instead.

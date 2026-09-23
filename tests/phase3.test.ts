@@ -224,6 +224,7 @@ describe('Phase 3 — MCP Streamable HTTP Integration for get_smart_brief', () =
       expect(callResult.content[0].type).toBe('text');
       expect(typeof callResult.content[0].text).toBe('string');
       expect(callResult.content[0].text.length).toBeGreaterThan(10);
+      expect(callResult.source).toBe('fallback_structured');
     } finally {
       await client.close();
     }

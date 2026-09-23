@@ -332,6 +332,8 @@ export function registerTaskTools(server: McpServer): void {
               text: smartResult.brief,
             },
           ],
+          source: smartResult.source,
+          model: smartResult.model,
         };
       } catch (err: any) {
         return {

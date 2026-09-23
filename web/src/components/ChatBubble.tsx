@@ -21,13 +21,22 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
         }`}
       >
         {!isUser && (
-          <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-zinc-800/80">
             <span
               className={`w-1.5 h-1.5 rounded-full ${isSystem ? 'bg-amber-400' : 'bg-zinc-400'}`}
             />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
               {isSystem ? 'System Event' : 'Campus Ops'}
             </span>
+            {message.source && (
+              <span className="text-[10px] font-mono text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
+                {message.source === 'aws_bedrock_claude'
+                  ? 'via AWS Bedrock'
+                  : message.source === 'fallback_structured'
+                    ? 'offline fallback'
+                    : message.source}
+              </span>
+            )}
           </div>
         )}
 

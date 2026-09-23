@@ -78,6 +78,7 @@ function formatToolResponse(tool: string, rawText: string): string {
 
     if (tool === 'get_smart_brief' || tool === 'get_weekly_brief') {
       if (typeof parsed === 'string') return parsed;
+      if (parsed.brief) return parsed.brief;
       if (parsed.summary) return parsed.summary;
       let out = '### Operations Brief\n\n';
       if (parsed.open_tasks?.length) {
@@ -244,9 +245,22 @@ export default function Home() {
         // Not a proposal JSON, proceed with normal format
       }
 
+      // Extract tool execution source if available (e.g. 'aws_bedrock_claude' vs 'fallback_structured')
+      let toolSource = result?.source;
+      if (!toolSource && intent.tool === 'get_smart_brief') {
+        try {
+          const parsed = JSON.parse(rawText);
+          if (parsed && typeof parsed === 'object' && parsed.source) {
+            toolSource = parsed.source;
+          }
+        } catch {
+          // not JSON
+        }
+      }
+
       // Display formatted output
       const formatted = formatToolResponse(intent.tool, rawText);
-      addMessage({ role: 'assistant', content: formatted });
+      addMessage({ role: 'assistant', content: formatted, source: toolSource });
 
       // Refresh sidebar state
       await refreshTasks();

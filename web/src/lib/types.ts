@@ -3,6 +3,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  source?: 'aws_bedrock_claude' | 'fallback_structured' | string;
   toolCall?: {
     tool: string;
     args: Record<string, unknown>;

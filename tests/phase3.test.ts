@@ -9,7 +9,13 @@ import {
   createTask,
   getWeeklyBriefData,
 } from '../src/db.js';
-import { generateSmartBrief, resetBedrockClient } from '../src/lib/bedrock.js';
+import {
+  generateSmartBrief,
+  resetBedrockClient,
+  getBedrockClient,
+  detectBedrockAuthMethod,
+  logBedrockStartup,
+} from '../src/lib/bedrock.js';
 import { createCampusOpsApp } from '../src/server.js';
 import type { Server } from 'node:http';
 import type { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
@@ -153,6 +159,64 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
     } finally {
       if (oldKey) process.env.AWS_ACCESS_KEY_ID = oldKey;
       if (oldSecret) process.env.AWS_SECRET_ACCESS_KEY = oldSecret;
+    }
+  });
+
+  it('throws an error if AWS_REGION is missing when initializing Bedrock client', () => {
+    const oldRegion = process.env.AWS_REGION;
+    delete process.env.AWS_REGION;
+    try {
+      expect(() => getBedrockClient()).toThrow(/AWS_REGION/);
+    } finally {
+      if (oldRegion) process.env.AWS_REGION = oldRegion;
+    }
+  });
+
+  it('correctly detects authentication method: bearer token, access key, or none', () => {
+    const oldToken = process.env.AWS_BEARER_TOKEN_BEDROCK;
+    const oldKey = process.env.AWS_ACCESS_KEY_ID;
+    const oldSecret = process.env.AWS_SECRET_ACCESS_KEY;
+
+    try {
+      // 1. None
+      delete process.env.AWS_BEARER_TOKEN_BEDROCK;
+      delete process.env.AWS_ACCESS_KEY_ID;
+      delete process.env.AWS_SECRET_ACCESS_KEY;
+      expect(detectBedrockAuthMethod()).toBe('none');
+
+      // 2. Bearer token
+      process.env.AWS_BEARER_TOKEN_BEDROCK = 'test-bearer-token';
+      expect(detectBedrockAuthMethod()).toBe('bearer token');
+
+      // 3. Access key
+      delete process.env.AWS_BEARER_TOKEN_BEDROCK;
+      process.env.AWS_ACCESS_KEY_ID = 'test-key';
+      process.env.AWS_SECRET_ACCESS_KEY = 'test-secret';
+      expect(detectBedrockAuthMethod()).toBe('access key');
+    } finally {
+      if (oldToken) process.env.AWS_BEARER_TOKEN_BEDROCK = oldToken; else delete process.env.AWS_BEARER_TOKEN_BEDROCK;
+      if (oldKey) process.env.AWS_ACCESS_KEY_ID = oldKey; else delete process.env.AWS_ACCESS_KEY_ID;
+      if (oldSecret) process.env.AWS_SECRET_ACCESS_KEY = oldSecret; else delete process.env.AWS_SECRET_ACCESS_KEY;
+    }
+  });
+
+  it('logBedrockStartup logs detected auth method or throws if AWS_REGION is missing', () => {
+    const oldRegion = process.env.AWS_REGION;
+    const oldToken = process.env.AWS_BEARER_TOKEN_BEDROCK;
+
+    try {
+      delete process.env.AWS_REGION;
+      expect(() => logBedrockStartup()).toThrow(/AWS_REGION/);
+
+      process.env.AWS_REGION = 'ap-southeast-2';
+      process.env.AWS_BEARER_TOKEN_BEDROCK = 'test-token';
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      logBedrockStartup();
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('bearer token'));
+      logSpy.mockRestore();
+    } finally {
+      if (oldRegion) process.env.AWS_REGION = oldRegion; else delete process.env.AWS_REGION;
+      if (oldToken) process.env.AWS_BEARER_TOKEN_BEDROCK = oldToken; else delete process.env.AWS_BEARER_TOKEN_BEDROCK;
     }
   });
 });

@@ -14,7 +14,9 @@ services:
       - key: DB_PATH
         value: ./data/campus_ops.db
       - key: AWS_REGION
-        value: us-east-1
+        sync: false
+      - key: AWS_BEARER_TOKEN_BEDROCK
+        sync: false
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY

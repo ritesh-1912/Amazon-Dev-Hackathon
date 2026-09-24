@@ -1,5 +1,9 @@
 import 'dotenv/config';
+import { logBedrockStartup } from './lib/bedrock.js';
 import { createCampusOpsApp } from './server.js';
+
+// Validate Bedrock configuration and log detected auth method at startup
+logBedrockStartup();
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 

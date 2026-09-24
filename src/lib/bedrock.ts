@@ -9,37 +9,71 @@ export interface SmartBriefResult {
   warning?: string;
 }
 
+export type BedrockAuthMethod = 'bearer token' | 'access key' | 'none';
+
 const DEFAULT_MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0';
-const DEFAULT_REGION = 'us-east-1';
 
 export const SYSTEM_PROMPT =
   "You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts.";
 
 let cachedClient: BedrockRuntimeClient | null = null;
 
+export function detectBedrockAuthMethod(): BedrockAuthMethod {
+  if (process.env.AWS_BEARER_TOKEN_BEDROCK?.trim()) {
+    return 'bearer token';
+  }
+  if (process.env.AWS_ACCESS_KEY_ID?.trim() && process.env.AWS_SECRET_ACCESS_KEY?.trim()) {
+    return 'access key';
+  }
+  return 'none';
+}
+
+export function getBedrockRegion(): string {
+  const region = process.env.AWS_REGION?.trim();
+  if (!region) {
+    throw new Error(
+      'AWS_REGION environment variable is required (no default fallback allowed). Set AWS_REGION matching your AWS project region (e.g. ap-southeast-2).'
+    );
+  }
+  return region;
+}
+
+export function logBedrockStartup(): void {
+  const authMethod = detectBedrockAuthMethod();
+  const region = process.env.AWS_REGION?.trim();
+
+  if (!region) {
+    throw new Error(
+      `[AWS Bedrock Startup Error] AWS_REGION is not set. Amazon Bedrock requires an explicit AWS_REGION matching your project region (e.g. ap-southeast-2). Guessing a default region is not permitted.`
+    );
+  }
+
+  console.log(`[AWS Bedrock] Auth method detected: ${authMethod} (region: ${region})`);
+}
+
 export function getBedrockClient(): BedrockRuntimeClient {
   if (cachedClient) return cachedClient;
 
-  const region = process.env.AWS_REGION || DEFAULT_REGION;
+  const region = getBedrockRegion();
+  const bearerToken = process.env.AWS_BEARER_TOKEN_BEDROCK?.trim();
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
   const sessionToken = process.env.AWS_SESSION_TOKEN?.trim();
 
-  // If explicit credentials exist, configure credentials object;
-  // otherwise fallback to default AWS SDK credential resolution
-  cachedClient = new BedrockRuntimeClient({
-    region,
-    ...(accessKeyId && secretAccessKey
-      ? {
-          credentials: {
-            accessKeyId,
-            secretAccessKey,
-            ...(sessionToken ? { sessionToken } : {}),
-          },
-        }
-      : {}),
-  });
+  // If explicit credentials exist and no bearer token, configure credentials object;
+  // otherwise fallback to default AWS SDK credential resolution (which automatically
+  // handles AWS_BEARER_TOKEN_BEDROCK without needing explicit credentials)
+  const clientConfig: any = { region };
 
+  if (!bearerToken && accessKeyId && secretAccessKey) {
+    clientConfig.credentials = {
+      accessKeyId,
+      secretAccessKey,
+      ...(sessionToken ? { sessionToken } : {}),
+    };
+  }
+
+  cachedClient = new BedrockRuntimeClient(clientConfig);
   return cachedClient;
 }
 
@@ -57,16 +91,17 @@ export async function generateSmartBrief(
 ): Promise<SmartBriefResult> {
   const modelId = process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL_ID;
 
-  // Check if AWS credentials appear configured before attempting call
+  // Check if AWS credentials or bearer token appear configured before attempting call
+  const authMethod = detectBedrockAuthMethod();
   const hasCreds =
-    (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) ||
+    authMethod !== 'none' ||
     process.env.AWS_PROFILE ||
     process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI ||
     process.env.AWS_WEB_IDENTITY_TOKEN_FILE;
 
   if (!hasCreds && !clientOverride) {
-    console.warn('[AWS Bedrock Warning] No AWS credentials detected in environment. Using fallback brief.');
-    return generateFallbackBrief(briefData, modelId, 'No AWS credentials configured in .env');
+    console.warn('[AWS Bedrock Warning] No AWS credentials or bearer token detected in environment. Using fallback brief.');
+    return generateFallbackBrief(briefData, modelId, 'No AWS credentials or bearer token configured in .env');
   }
 
   try {

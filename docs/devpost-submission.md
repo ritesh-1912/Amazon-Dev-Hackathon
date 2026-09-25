@@ -22,8 +22,9 @@ To verify the project in under 2 minutes:
 
 1. Open the live simulator: [https://campusmcp.vercel.app](https://campusmcp.vercel.app).
 2. Note: the MCP server is on Render's free tier and may take up to 30s to wake up on first request — the UI will show a "waking up" message during this, this is expected.
-3. Try: "What's due this week?", then "What's blocked?", then "Complete CS 301 design", then "What's blocked?" again to see the dependent task unblock, then "Pay tuition fee" to see the confirmation modal.
-4. Optionally hit [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health) directly to see the MCP server's spec version and status independent of the UI.
+3. Ask "What's due this week?" — look for the small "via AWS Bedrock" tag on the response as proof the Bedrock call is live, not the offline fallback.
+4. Try: "What's blocked?", then "Complete CS 301 design", then "What's blocked?" again to see the dependent task unblock, then "Pay tuition fee" to see the confirmation modal.
+5. Optionally hit [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health) directly to see the MCP server's spec version and status independent of the UI.
 
 ---
 
@@ -91,7 +92,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 - **MCP Specification Compliance**: Implements the Model Context Protocol (MCP) Streamable HTTP specification (2025-11-25).
 - **Enforced Human-in-the-Loop Guard**: The server rejects any direct status change on `HUMAN_REQUIRED` tasks outside the `propose_action`/`confirm_action` flow.
 - **Deployment Configurations Included**: Contains a multi-stage Dockerfile, Render blueprint (`render.yaml`), Fly.io config (`fly.toml`), and Next.js deployment configuration for Vercel.
-- **Automated Test Suite**: 19 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
+- **Automated Test Suite**: 22 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
 
 ---
 

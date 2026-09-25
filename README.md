@@ -82,12 +82,15 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 
 Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
 
-### Workflow:
-1. When querying upcoming work or invoking `get_smart_brief`, the server aggregates the schedule: tasks due within 7 days, currently blocked tasks with blocker IDs, and overdue items.
-2. The structured JSON graph is sent to Claude on Bedrock.
-3. Claude synthesizes the data into a 3-4 sentence operational brief detailing pending deadlines, blockers, and items requiring confirmation.
-4. **Fallback Handling**: If AWS credentials are not configured or rate limits are reached, the engine falls back to a deterministic structured summary without interruption.
-5. See [`docs/aws-builder.md`](docs/aws-builder.md) for architecture documentation of the AWS Bedrock integration.
+### Features:
+1. **Intelligent Spoken Synthesis**: Aggregates the relational academic graph (due dates, blockers, and overdue items) and synthesizes a calm 3-4 sentence voice briefing.
+2. **Authentication Support**:
+   - **Primary / Recommended**: `AWS_BEARER_TOKEN_BEDROCK` (Bedrock API bearer token automatically resolved by `@aws-sdk/client-bedrock-runtime`).
+   - **Documented Fallback**: `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` (standard IAM credentials).
+3. **Strict Region Enforcement**: Requires explicit `AWS_REGION` matching your project's region (no hardcoded fallback to avoid silent cross-region failures).
+4. **Graceful Fallback**: If Bedrock is unreachable or unconfigured, the server returns a deterministic structured summary without crashing.
+5. **Live Verification in UI**: The Alexa+ web simulator inspects the `source` field of the brief response and displays an understated tag (`"via AWS Bedrock"` vs `"offline fallback"`).
+6. See [`docs/aws-builder.md`](docs/aws-builder.md) for architecture documentation of the AWS Bedrock integration.
 
 ---
 
@@ -151,14 +154,21 @@ cd web && npm install && cd ..
 ```bash
 cp .env.example .env
 ```
-Optional: Add your AWS credentials to `.env` to enable live Bedrock Claude generation:
+Optional: Add your AWS configuration to `.env` to enable live Bedrock Claude generation:
 ```ini
-AWS_REGION=us-east-1
+# Required: your project's assigned region (no default fallback; e.g. ap-southeast-2 or us-east-1)
+AWS_REGION=ap-southeast-2
+
+# Primary/Recommended auth: Bedrock API Bearer Token
+AWS_BEARER_TOKEN_BEDROCK=your_token
+
+# Fallback auth: IAM Access Keys
 AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
+
 BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 ```
-*(If AWS credentials are omitted, the system uses deterministic brief generation).*
+*(If AWS credentials/bearer tokens are omitted, the system uses deterministic structured brief generation).*
 
 ### 3. Seed Demo Data
 ```bash
@@ -183,12 +193,12 @@ Open **`http://localhost:3000`** in your browser to interact with the Alexa+ Web
 ```bash
 npm test
 ```
-All 19 test cases verify:
+All 22 test cases verify:
 - SQLite persistence and crash recovery
 - Dependency blocking and cascading unblocking
 - Human-in-the-loop action guards
 - Rejection of invalid status changes on `HUMAN_REQUIRED` tasks
-- AWS Bedrock Claude synthesis and graceful fallback
+- AWS Bedrock Claude synthesis, bearer token detection, strict region enforcement, and graceful fallback
 - Full Streamable HTTP MCP JSON-RPC protocol round-trips
 
 ---
@@ -202,7 +212,10 @@ The repository includes a ready-to-use [`render.yaml`](render.yaml) blueprint:
 1. Push this repository to GitHub.
 2. In the [Render Dashboard](https://dashboard.render.com/), select **New -> Blueprint**.
 3. Connect your repository. Render detects `render.yaml` and deploys the `campus-ops-mcp` web service.
-4. Set optional environment variables: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+4. Set required and optional environment variables in Render:
+   - `AWS_REGION`: Your AWS project region (e.g. `ap-southeast-2` or `us-east-1`, required)
+   - `AWS_BEARER_TOKEN_BEDROCK`: Primary auth (optional, enables live Bedrock calls)
+   - `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`: Fallback IAM credentials (optional)
 5. Your MCP server will be live at `https://<service-name>.onrender.com`. Health endpoint: `/health`.
 
 #### Option B: Deploy to Fly.io

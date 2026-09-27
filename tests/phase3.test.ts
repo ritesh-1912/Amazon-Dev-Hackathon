@@ -15,6 +15,7 @@ import {
   getBedrockClient,
   detectBedrockAuthMethod,
   logBedrockStartup,
+  isBedrockAvailable,
 } from '../src/lib/bedrock.js';
 import { createCampusOpsApp } from '../src/server.js';
 import type { Server } from 'node:http';
@@ -200,19 +201,27 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
     }
   });
 
-  it('logBedrockStartup logs detected auth method or throws if AWS_REGION is missing', () => {
+  it('logBedrockStartup logs warning and marks Bedrock unavailable when AWS_REGION is missing (without throwing)', () => {
     const oldRegion = process.env.AWS_REGION;
     const oldToken = process.env.AWS_BEARER_TOKEN_BEDROCK;
 
     try {
       delete process.env.AWS_REGION;
-      expect(() => logBedrockStartup()).toThrow(/AWS_REGION/);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(() => logBedrockStartup()).not.toThrow();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[AWS Bedrock] AWS_REGION not set — Bedrock features disabled, falling back to structured briefs')
+      );
+      expect(isBedrockAvailable()).toBe(false);
+      warnSpy.mockRestore();
 
       process.env.AWS_REGION = 'ap-southeast-2';
       process.env.AWS_BEARER_TOKEN_BEDROCK = 'test-token';
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       logBedrockStartup();
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('bearer token'));
+      expect(isBedrockAvailable()).toBe(true);
       logSpy.mockRestore();
     } finally {
       if (oldRegion) process.env.AWS_REGION = oldRegion; else delete process.env.AWS_REGION;
@@ -291,6 +300,61 @@ describe('Phase 3 — MCP Streamable HTTP Integration for get_smart_brief', () =
       expect(callResult.source).toBe('fallback_structured');
     } finally {
       await client.close();
+    }
+  });
+
+  it('starts server and responds to non-Bedrock tool calls even with AWS_REGION unset', async () => {
+    const oldRegion = process.env.AWS_REGION;
+    delete process.env.AWS_REGION;
+
+    // Simulate startup check without throwing
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => logBedrockStartup()).not.toThrow();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[AWS Bedrock] AWS_REGION not set')
+    );
+    warnSpy.mockRestore();
+
+    const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
+    const client = new Client({ name: 'test-client-no-region', version: '1.0.0' }, { capabilities: {} });
+
+    try {
+      await client.connect(transport);
+
+      // 1. Non-Bedrock tool: create_task works normally
+      const createRes = (await client.callTool({
+        name: 'create_task',
+        arguments: {
+          title: 'CS 101 Midterm Prep',
+          category: 'assignment',
+          deadline: new Date(Date.now() + 86400000 * 3).toISOString(),
+        },
+      })) as any;
+      expect(createRes.isError).toBeFalsy();
+      const createdTask = JSON.parse(createRes.content[0].text);
+      expect(createdTask.id).toBeDefined();
+      expect(createdTask.title).toBe('CS 101 Midterm Prep');
+
+      // 2. Non-Bedrock tool: list_tasks works normally
+      const listRes = (await client.callTool({
+        name: 'list_tasks',
+        arguments: {},
+      })) as any;
+      expect(listRes.isError).toBeFalsy();
+      const tasks = JSON.parse(listRes.content[0].text);
+      expect(tasks.some((t: any) => t.id === createdTask.id)).toBe(true);
+
+      // 3. Bedrock tool: get_smart_brief gracefully degrades to fallback_structured without network error
+      const briefRes = (await client.callTool({
+        name: 'get_smart_brief',
+        arguments: {},
+      })) as any;
+      expect(briefRes.isError).toBeFalsy();
+      expect(briefRes.source).toBe('fallback_structured');
+      expect(briefRes.content[0].text).toContain('CS 101 Midterm Prep');
+    } finally {
+      await client.close();
+      if (oldRegion) process.env.AWS_REGION = oldRegion;
     }
   });
 });

@@ -17,6 +17,15 @@ export const SYSTEM_PROMPT =
   "You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts.";
 
 let cachedClient: BedrockRuntimeClient | null = null;
+let bedrockAvailable = true;
+let bedrockUnavailableReason: string | null = null;
+
+export function isBedrockAvailable(): boolean {
+  if (!process.env.AWS_REGION?.trim()) {
+    return false;
+  }
+  return bedrockAvailable;
+}
 
 export function detectBedrockAuthMethod(): BedrockAuthMethod {
   if (process.env.AWS_BEARER_TOKEN_BEDROCK?.trim()) {
@@ -39,15 +48,19 @@ export function getBedrockRegion(): string {
 }
 
 export function logBedrockStartup(): void {
-  const authMethod = detectBedrockAuthMethod();
   const region = process.env.AWS_REGION?.trim();
+  const authMethod = detectBedrockAuthMethod();
 
   if (!region) {
-    throw new Error(
-      `[AWS Bedrock Startup Error] AWS_REGION is not set. Amazon Bedrock requires an explicit AWS_REGION matching your project region (e.g. ap-southeast-2). Guessing a default region is not permitted.`
-    );
+    bedrockAvailable = false;
+    bedrockUnavailableReason =
+      'AWS_REGION not set — Bedrock features disabled, falling back to structured briefs';
+    console.warn(`[AWS Bedrock] ${bedrockUnavailableReason}`);
+    return;
   }
 
+  bedrockAvailable = true;
+  bedrockUnavailableReason = null;
   console.log(`[AWS Bedrock] Auth method detected: ${authMethod} (region: ${region})`);
 }
 
@@ -79,6 +92,8 @@ export function getBedrockClient(): BedrockRuntimeClient {
 
 export function resetBedrockClient(): void {
   cachedClient = null;
+  bedrockAvailable = true;
+  bedrockUnavailableReason = null;
 }
 
 /**
@@ -90,6 +105,14 @@ export async function generateSmartBrief(
   clientOverride?: BedrockRuntimeClient
 ): Promise<SmartBriefResult> {
   const modelId = process.env.BEDROCK_MODEL_ID || DEFAULT_MODEL_ID;
+
+  // Check internal availability flag before attempting network call or client instantiation
+  if (!clientOverride && !isBedrockAvailable()) {
+    const reason =
+      bedrockUnavailableReason ||
+      'AWS_REGION not set — Bedrock features disabled, falling back to structured briefs';
+    return generateFallbackBrief(briefData, modelId, reason);
+  }
 
   // Check if AWS credentials or bearer token appear configured before attempting call
   const authMethod = detectBedrockAuthMethod();

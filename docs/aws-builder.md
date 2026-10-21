@@ -9,7 +9,7 @@ This document outlines how **Campus Ops MCP** integrates Amazon Web Services to 
 - **Service Name**: **Amazon Bedrock Runtime**
 - **Official SDK**: `@aws-sdk/client-bedrock-runtime` (v3)
 - **API Invoked**: `ConverseCommand` (Amazon Bedrock Unified Conversational Inference API)
-- **Foundation Model**: **Anthropic Claude 3** (Default: `anthropic.claude-3-haiku-20240307-v1:0`, configurable via `BEDROCK_MODEL_ID` to Claude 3.5 Sonnet / Haiku)
+- **Foundation Model**: **Anthropic Claude Haiku 4.5** (Default: `global.anthropic.claude-haiku-4-5-20251001-v1:0`, configurable via `BEDROCK_MODEL_ID`)
 - **Authentication**:
   - **Primary / Recommended**: `AWS_BEARER_TOKEN_BEDROCK` (Bedrock API bearer token; automatically resolved by `@aws-sdk/client-bedrock-runtime`)
   - **Documented Fallback**: `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` (standard IAM credentials)
@@ -40,7 +40,7 @@ In an academic operations system, the raw backend state is a complex relational 
 A voice interface like **Alexa+** cannot simply read out raw JSON or recite database rows without overwhelming the student with cognitive overhead.
 
 ### The Bedrock Solution
-Amazon Bedrock with Claude acts as an **operational synthesizer**:
+Amazon Bedrock with Claude Haiku 4.5 acts as an **operational synthesizer**:
 1. **Context Comprehension**: Ingests the structured JSON output of `get_weekly_brief()` containing upcoming deadlines, blockers, and required confirmations.
 2. **Calm Persona**: Enforces a calm, concise spoken-brief persona:
    > *"You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts."*
@@ -51,7 +51,7 @@ Amazon Bedrock with Claude acts as an **operational synthesizer**:
 ## 4. Graceful Fallback & Error Handling
 
 The server implements fault-tolerant fallback logic in `src/lib/bedrock.ts`:
-- **Startup Authentication & Region Verification**: At startup, the server inspects the environment and logs which authentication method is active (`bearer token`, `access key`, or `none`). If `AWS_REGION` is missing, startup fails immediately with a clear error rather than silently defaulting to a wrong region.
+- **Startup Authentication & Region Verification**: At startup, the server inspects the environment and logs which authentication method is active (`bearer token`, `access key`, or `none`). If `AWS_REGION` is missing, the server logs a warning and disables Bedrock features with fallback briefs, rather than silently defaulting to a wrong region or crashing.
 - If AWS credentials or bearer tokens are not configured, network connectivity drops, or rate limits occur, the server logs an explicit `[AWS Bedrock Warning]` and returns a structured fallback brief.
 - The server won't crash if Bedrock is unreachable; it returns a structured fallback brief instead.
 - **UI Verification Proof**: The Alexa+ web simulator inspects the returned tool result `source` field and displays a small, muted tag next to the message (`"via AWS Bedrock"` for live Bedrock calls vs `"offline fallback"` for deterministic fallback), allowing judges and users to verify live execution in production.

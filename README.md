@@ -80,7 +80,7 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 
 ## How AWS Bedrock Is Used (AWS Builder Challenge)
 
-Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude (`anthropic.claude-3-haiku-20240307-v1:0`) via the Converse API (`ConverseCommand`).
+Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude Haiku 4.5 (`global.anthropic.claude-haiku-4-5-20251001-v1:0`) via the Converse API (`ConverseCommand`).
 
 ### Features:
 1. **Intelligent Spoken Synthesis**: Aggregates the relational academic graph (due dates, blockers, and overdue items) and synthesizes a calm 3-4 sentence voice briefing.
@@ -166,7 +166,7 @@ AWS_BEARER_TOKEN_BEDROCK=your_token
 AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
 
-BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 *(If AWS credentials/bearer tokens are omitted, the system uses deterministic structured brief generation).*
 

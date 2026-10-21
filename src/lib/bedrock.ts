@@ -11,7 +11,7 @@ export interface SmartBriefResult {
 
 export type BedrockAuthMethod = 'bearer token' | 'access key' | 'none';
 
-const DEFAULT_MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0';
+export const DEFAULT_MODEL_ID = 'global.anthropic.claude-haiku-4-5-20251001-v1:0';
 
 export const SYSTEM_PROMPT =
   "You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts.";
@@ -191,10 +191,14 @@ export async function generateSmartBrief(
       structured_brief: briefData,
     };
   } catch (err: any) {
+    const errorName = err.name || 'Error';
+    const errorDetails = err.message?.startsWith(`${errorName}:`)
+      ? err.message
+      : `${errorName}: ${err.message}`;
     console.warn(
-      `[AWS Bedrock Warning] Failed to invoke Claude model on Bedrock (${err.name || 'Error'}: ${err.message}). Falling back to structured brief.`
+      `[AWS Bedrock Warning] Failed to invoke Claude model on Bedrock (${errorDetails}). Falling back to structured brief.`
     );
-    return generateFallbackBrief(briefData, modelId, err.message);
+    return generateFallbackBrief(briefData, modelId, errorDetails);
   }
 }
 

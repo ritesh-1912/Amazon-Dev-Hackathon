@@ -6,7 +6,7 @@ A Next.js (App Router) + TypeScript + Tailwind chat-style user interface that si
 - **Conversational Chat Interface**: Simulates hands-free Alexa+ voice requests for academic operations.
 - **Natural Language Intent Routing**: Maps conversational user input to structured MCP tools (`get_smart_brief`, `list_tasks`, `propose_action`, `confirm_action`).
 - **AWS Bedrock Proof Indicator**: Dynamically reads `result.source` on operational briefs and renders an understated tag:
-  - `via AWS Bedrock`: live synthesis via Claude 3 on AWS Bedrock Runtime.
+  - `via AWS Bedrock`: live synthesis via Claude Haiku 4.5 on AWS Bedrock Runtime.
   - `offline fallback`: deterministic structured brief when Bedrock is unreachable or unconfigured.
 - **Guarded Action Confirmation Modal**: Enforces explicit human confirmation dialogs for `HUMAN_REQUIRED` actions (such as paying tuition fees or final project submissions).
 - **Live Task Board**: Sidebar tracking real-time status (`open`, `blocked`, `done`, `stale`) with live task counters and visual dependency indicators.

@@ -16,6 +16,7 @@ import {
   detectBedrockAuthMethod,
   logBedrockStartup,
   isBedrockAvailable,
+  DEFAULT_MODEL_ID,
 } from '../src/lib/bedrock.js';
 import { createCampusOpsApp } from '../src/server.js';
 import type { Server } from 'node:http';
@@ -96,6 +97,8 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
     const result = await generateSmartBrief(briefData, mockClient);
 
     expect(result.source).toBe('aws_bedrock_claude');
+    expect(result.model).toBe('global.anthropic.claude-haiku-4-5-20251001-v1:0');
+    expect(DEFAULT_MODEL_ID).toBe('global.anthropic.claude-haiku-4-5-20251001-v1:0');
     expect(result.brief).toBe(mockClaudeResponse);
     expect(result.structured_brief).toBeDefined();
     expect(mockClient.send).toHaveBeenCalledTimes(1);
@@ -135,6 +138,36 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
     expect(result.brief).toContain('Physics Lab');
     expect(result.warning).toContain('Rate exceeded');
     expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('includes the actual error name (e.g. ResourceNotFoundException) in fallback warning and logs when Bedrock fails', async () => {
+    const briefData = {
+      generated_at: new Date().toISOString(),
+      tasks_due_soon: [],
+      blocked_tasks: [],
+      stale_tasks: [],
+      pending_confirmations: [],
+      summary: { total_open: 0, due_in_7_days: 0, blocked: 0, stale: 0, human_required: 0 },
+    };
+
+    const notFoundError = new Error('The specified model is not available in this region');
+    notFoundError.name = 'ResourceNotFoundException';
+
+    const failingClient = {
+      send: vi.fn().mockRejectedValue(notFoundError),
+    } as unknown as BedrockRuntimeClient;
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await generateSmartBrief(briefData, failingClient);
+
+    expect(result.source).toBe('fallback_structured');
+    expect(result.warning).toContain('ResourceNotFoundException');
+    expect(result.warning).toContain('The specified model is not available in this region');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ResourceNotFoundException: The specified model is not available in this region')
+    );
+    warnSpy.mockRestore();
   });
 
   it('gracefully falls back when no AWS credentials are configured in environment', async () => {

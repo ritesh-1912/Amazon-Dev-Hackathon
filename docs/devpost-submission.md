@@ -30,7 +30,7 @@ To verify the project in under 2 minutes:
 
 ## Targeted Hackathon Tracks
 - **Alexa+ Track**: Simulated Experience Path (Conversational Next.js UI interacting with stateful MCP server).
-- **AWS Builder Mini-Challenge**: Live AWS Bedrock Runtime integration with Anthropic Claude for natural language intelligence and weekly briefs.
+- **AWS Builder Mini-Challenge**: Live AWS Bedrock Runtime integration with Anthropic Claude Haiku 4.5 for natural language intelligence and weekly briefs.
 
 ---
 
@@ -53,7 +53,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 - **Conversational Alexa+ Simulator**: A voice-style chat interface where students can ask questions like *"What's due this week?"*, *"What tasks are blocked?"*, *"Complete CS 301 design"*, or *"Mark fees paid"*.
 - **Dynamic Dependency Graph**: Tasks evaluate dependencies in real time. If prerequisite tasks are incomplete, dependent tasks are classified as `blocked`. Once prerequisites are marked done, dependents transition to `open`.
 - **Two-Phase Action Commit (`propose_action` -> `confirm_action`)**: For guarded tasks (`HUMAN_REQUIRED` class, such as tuition payments or final project submissions), the MCP server rejects direct updates and returns a proposal requiring confirmation. The web interface renders an explicit confirmation modal dialog (*"Confirm: mark [Spring tuition] as paid? [Confirm] [Cancel]"*).
-- **AI Briefing with AWS Bedrock**: Using Claude on AWS Bedrock, the assistant summarizes task dependencies into an operational brief detailing what's due, what's blocked and why, and what requires human review.
+- **AI Briefing with AWS Bedrock**: Using Claude Haiku 4.5 on AWS Bedrock, the assistant summarizes task dependencies into an operational brief detailing what's due, what's blocked and why, and what requires human review.
 - **Audit Log**: An SQLite table records every status alteration, action proposal, confirmation, and rejection with ISO timestamps.
 
 ---
@@ -71,7 +71,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 
 ### 3. AWS Bedrock Runtime Integration
 - Integrated via `@aws-sdk/client-bedrock-runtime` using the Converse API (`ConverseCommand`).
-- Prompts Claude (`anthropic.claude-3-haiku-20240307-v1:0`) to format task summaries.
+- Prompts Claude Haiku 4.5 (`global.anthropic.claude-haiku-4-5-20251001-v1:0`) to format task summaries.
 - Falls back to a deterministic structured brief if Bedrock is unreachable or unconfigured.
 
 ### 4. Alexa+ Web Simulator

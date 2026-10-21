@@ -52,6 +52,7 @@ Amazon Bedrock acts as an **operational synthesizer**:
 
 The server implements fault-tolerant fallback logic in `src/lib/bedrock.ts`:
 - **Startup Authentication & Region Verification**: At startup, the server inspects the environment and logs which authentication method is active (`bearer token`, `access key`, or `none`). If `AWS_REGION` is missing, the server logs a warning and disables Bedrock features with fallback briefs, rather than silently defaulting to a wrong region or crashing.
-- If AWS credentials or bearer tokens are not configured, network connectivity drops, or rate limits occur, the server logs an explicit `[AWS Bedrock Warning]` and returns a structured fallback brief.
+- If AWS credentials or bearer tokens are not configured, network connectivity drops, or account authorization issues occur, the server logs an explicit `[AWS Bedrock Warning]` and returns a structured fallback brief.
 - The server won't crash if Bedrock is unreachable; it returns a structured fallback brief instead.
-- **UI Verification Proof**: The Alexa+ web simulator inspects the returned tool result `source` field and displays a small, muted tag next to the message (`"via AWS Bedrock"` for live Bedrock calls vs `"offline fallback"` for deterministic fallback), allowing judges and users to verify live execution in production.
+- **UI Verification Proof**: The Alexa+ web simulator inspects the returned tool result `source` field and displays a small, muted tag next to the message: `"via AWS Bedrock"` when Bedrock is enabled for the account, or `"offline fallback"` otherwise. Both are valid and expected behaviors.
+- **Known Limitation**: The AWS project account was blocked from model invocation (`ValidationException: Operation not allowed`) pending AWS Support review at submission time. The integration handles this cleanly via structured brief fallback.

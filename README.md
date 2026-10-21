@@ -32,7 +32,7 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 +-------------------------------------------------------------+
 |                 Alexa+ Web Simulator (Next.js)              |
 |  - Conversational Voice-Style Chat Interface                |
-|  - Natural Language Intent Router                           |
+|  - Rule-Based Intent Router                                 |
 |  - Guarded Action Confirmation Modal (Two-Phase Approval)   |
 |  - Live Task Board with Reactive Dependency Resolution      |
 +------------------------------+------------------------------+
@@ -83,14 +83,15 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Amazon Nova Lite (`amazon.nova-lite-v1:0`) by default via the Converse API (`ConverseCommand`). Any Converse-compatible Bedrock model can be configured via `BEDROCK_MODEL_ID`.
 
 ### Features:
-1. **Intelligent Spoken Synthesis**: Aggregates the relational academic graph (due dates, blockers, and overdue items) and synthesizes a calm 3-4 sentence voice briefing.
+1. **Spoken Weekly Briefing**: Aggregates the relational academic graph (due dates, blockers, and overdue items) and synthesizes a calm 3-4 sentence voice briefing.
 2. **Authentication Support**:
    - **Primary / Recommended**: `AWS_BEARER_TOKEN_BEDROCK` (Bedrock API bearer token automatically resolved by `@aws-sdk/client-bedrock-runtime`).
    - **Documented Fallback**: `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` (standard IAM credentials).
 3. **Strict Region Enforcement**: Requires explicit `AWS_REGION` matching your project's region (no hardcoded fallback to avoid silent cross-region failures).
-4. **Graceful Fallback**: If Bedrock is unreachable or unconfigured, the server returns a deterministic structured summary without crashing.
-5. **Live Verification in UI**: The Alexa+ web simulator inspects the `source` field of the brief response and displays an understated tag (`"via AWS Bedrock"` vs `"offline fallback"`).
-6. See [`docs/aws-builder.md`](docs/aws-builder.md) for architecture documentation of the AWS Bedrock integration.
+4. **Graceful Fallback**: If Bedrock is unreachable, unconfigured, or blocked by account authorization, the server returns a deterministic structured summary without crashing.
+5. **Live Verification in UI**: The Alexa+ web simulator inspects the `source` field of the brief response and displays an understated tag: `"via AWS Bedrock"` when Bedrock is enabled for the account, or `"offline fallback"` otherwise. Both are valid and expected behaviors.
+6. **Known Limitation**: The AWS project account was blocked from model invocation (`ValidationException: Operation not allowed`) pending AWS Support review at submission time.
+7. See [`docs/aws-builder.md`](docs/aws-builder.md) for architecture documentation of the AWS Bedrock integration.
 
 ---
 
@@ -193,7 +194,7 @@ Open **`http://localhost:3000`** in your browser to interact with the Alexa+ Web
 ```bash
 npm test
 ```
-All 22 test cases verify:
+All 24 test cases verify:
 - SQLite persistence and crash recovery
 - Dependency blocking and cascading unblocking
 - Human-in-the-loop action guards

@@ -22,15 +22,17 @@ To verify the project in under 2 minutes:
 
 1. Open the live simulator: [https://campusmcp.vercel.app](https://campusmcp.vercel.app).
 2. Note: the MCP server is on Render's free tier and may take up to 30s to wake up on first request — the UI will show a "waking up" message during this, this is expected.
-3. Ask "What's due this week?" — look for the small "via AWS Bedrock" tag on the response as proof the Bedrock call is live, not the offline fallback.
+3. Ask "What's due this week?" — the expected result is a brief with a small source tag: "via AWS Bedrock" when Bedrock is enabled for the account, or "offline fallback" otherwise. Both are correct behavior.
 4. Try: "What's blocked?", then "Complete CS 301 design", then "What's blocked?" again to see the dependent task unblock, then "Pay tuition fee" to see the confirmation modal.
 5. Optionally hit [https://campus-ops-mcp-xlse.onrender.com/health](https://campus-ops-mcp-xlse.onrender.com/health) directly to see the MCP server's spec version and status independent of the UI.
+
+> **Known limitation**: The AWS project account was blocked from model invocation (`ValidationException: Operation not allowed`) pending AWS Support review at submission time.
 
 ---
 
 ## Targeted Hackathon Tracks
 - **Alexa+ Track**: Simulated Experience Path (Conversational Next.js UI interacting with stateful MCP server).
-- **AWS Builder Mini-Challenge**: Live AWS Bedrock Runtime integration (Amazon Nova Lite default) for natural language intelligence and weekly briefs.
+- **AWS Builder Mini-Challenge**: AWS Bedrock Runtime integration (Converse API, Amazon Nova Lite default) that writes the weekly brief; falls back to a structured brief when the AWS account cannot invoke models.
 
 ---
 
@@ -53,7 +55,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 - **Conversational Alexa+ Simulator**: A voice-style chat interface where students can ask questions like *"What's due this week?"*, *"What tasks are blocked?"*, *"Complete CS 301 design"*, or *"Mark fees paid"*.
 - **Dynamic Dependency Graph**: Tasks evaluate dependencies in real time. If prerequisite tasks are incomplete, dependent tasks are classified as `blocked`. Once prerequisites are marked done, dependents transition to `open`.
 - **Two-Phase Action Commit (`propose_action` -> `confirm_action`)**: For guarded tasks (`HUMAN_REQUIRED` class, such as tuition payments or final project submissions), the MCP server rejects direct updates and returns a proposal requiring confirmation. The web interface renders an explicit confirmation modal dialog (*"Confirm: mark [Spring tuition] as paid? [Confirm] [Cancel]"*).
-- **AI Briefing with AWS Bedrock**: Using Amazon Bedrock, the assistant summarizes task dependencies into an operational brief detailing what's due, what's blocked and why, and what requires human review.
+- **Spoken Briefing with AWS Bedrock**: Using Amazon Bedrock (defaulting to Amazon Nova Lite), the assistant writes an operational weekly brief detailing what's due, what's blocked and why, and what requires human review; falls back to a structured brief when Bedrock cannot be invoked.
 - **Audit Log**: An SQLite table records every status alteration, action proposal, confirmation, and rejection with ISO timestamps.
 
 ---
@@ -72,11 +74,11 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 ### 3. AWS Bedrock Runtime Integration
 - Integrated via `@aws-sdk/client-bedrock-runtime` using the Converse API (`ConverseCommand`).
 - Prompts Amazon Bedrock (defaulting to Amazon Nova Lite, `amazon.nova-lite-v1:0`, configurable via `BEDROCK_MODEL_ID`) to format task summaries.
-- Falls back to a deterministic structured brief if Bedrock is unreachable or unconfigured.
+- Falls back to a deterministic structured brief if Bedrock is unreachable, unconfigured, or blocked by account authorization.
 
 ### 4. Alexa+ Web Simulator
 - Built with Next.js (App Router), React 19, TypeScript, and Tailwind CSS.
-- Features a chat interface with intent routing and quick user-story action buttons.
+- Features a chat interface with rule-based intent routing and quick user-story action buttons.
 - Features a Live Task Board sidebar displaying status counters and prerequisite dependencies.
 - Features a confirmation modal dialog for guarded actions.
 
@@ -85,6 +87,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 ## Challenges We Encountered
 - **Streamable HTTP Protocol Handling**: The MCP Streamable HTTP specification uses Server-Sent Events (`text/event-stream`) for JSON-RPC tool responses and notifications. Bridging Next.js API routes with persistent MCP session headers (`mcp-session-id`) required custom SSE stream parsing and session lifecycle management.
 - **Guard Enforcement**: Ensuring that `update_task` cannot bypass human confirmation required enforcing a guard that routes all `HUMAN_REQUIRED` mutations through `confirm_action`, rejecting direct `update_task` calls on those tasks.
+- **AWS Project Account Model Access (Known Limitation)**: The AWS project account was blocked from model invocation (`ValidationException: Operation not allowed`) pending AWS Support review at submission time. The integration safely detects this failure condition and returns the deterministic structured brief (`source: 'fallback_structured'`).
 
 ---
 
@@ -92,7 +95,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 - **MCP Specification Compliance**: Implements the Model Context Protocol (MCP) Streamable HTTP specification (2025-11-25).
 - **Enforced Human-in-the-Loop Guard**: The server rejects any direct status change on `HUMAN_REQUIRED` tasks outside the `propose_action`/`confirm_action` flow.
 - **Deployment Configurations Included**: Contains a multi-stage Dockerfile, Render blueprint (`render.yaml`), Fly.io config (`fly.toml`), and Next.js deployment configuration for Vercel.
-- **Automated Test Suite**: 22 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
+- **Automated Test Suite**: 24 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
 
 ---
 
@@ -104,6 +107,9 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 ---
 
 ## Product Feedback for the Amazon Team
-1. **Alexa+ Tool Execution Safety**: We love the direction of conversational Alexa+ agents powered by MCP. Providing native support for two-phase commit actions (`propose` / `confirm`) directly in the Alexa+ voice flow (e.g. voice confirmation prompts: *"Are you sure you want to proceed with [action]?"*) would elevate agent safety across consumer use cases.
+1. **Alexa+ Tool Execution Safety**: For conversational Alexa+ agents powered by MCP, providing native support for two-phase commit actions (`propose` / `confirm`) directly in the Alexa+ voice flow (e.g. voice confirmation prompts: *"Are you sure you want to proceed with [action]?"*) would elevate agent safety across consumer use cases.
 2. **MCP over Streamable HTTP Documentation**: Standardizing sample client libraries and SDK helper utilities for Next.js and web environments connecting to Streamable HTTP MCP servers will accelerate developer adoption.
-3. **AWS Bedrock Converse API**: The unified Converse API is exceptionally clean and intuitive to work with across Bedrock foundation models. Adding lightweight prompt caching and preset streaming formatters for voice responses would make voice-agent development even faster.
+3. **AWS Bedrock Converse API**: The unified Converse API provides a consistent interface across Bedrock foundation models. Adding lightweight prompt caching and preset streaming formatters for voice responses would make voice-agent development even faster.
+4. **New AWS Experience & Model Authorization**: On a new AWS-experience project account, Bedrock returned "ValidationException: Operation not allowed" for all models and the Anthropic first-time-use form returned "Your account is not authorized", with no message explaining the cause or fix.
+5. **Credit Allocation & Billing Navigation**: The hackathon credit showed $150 on the management account but $0 on the project account's Credits page, and the settings.aws.com Billing tab showed "Create your first project" despite an existing project.
+6. **Documentation & Sample Code Currency**: Help articles still describe a Bedrock "Model access" page that has been retired, and many samples default to Claude 3 Haiku, which is past end of life.

@@ -1,10 +1,8 @@
 import 'dotenv/config';
+import type Database from 'better-sqlite3';
 import { getDb, clearDatabase, createTask, updateTask, refreshAllTaskStatuses } from './db.js';
 
-export function seedDemoData(): void {
-  console.log('Seeding demo tasks into SQLite database...');
-  const db = getDb();
-
+export function resetDemoData(db: Database.Database = getDb()): void {
   // Clear existing records
   clearDatabase(db);
 
@@ -102,8 +100,12 @@ export function seedDemoData(): void {
   );
 
   refreshAllTaskStatuses(db);
+}
 
-  console.log(`Successfully seeded ${demoTasks.length} realistic tasks!`);
+export function seedDemoData(db: Database.Database = getDb()): void {
+  console.log('Seeding demo tasks into SQLite database...');
+  resetDemoData(db);
+  console.log('Successfully seeded 8 realistic tasks!');
 }
 
 // Execute if run directly

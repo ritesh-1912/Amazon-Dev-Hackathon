@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { registerTaskTools } from './tools.js';
 import { getDb } from './db.js';
+import { resetDemoData } from './seed.js';
 
 export function createCampusOpsMcpServer(): McpServer {
   const server = new McpServer(
@@ -57,6 +58,22 @@ export function createCampusOpsApp(): { app: express.Express; transports: Record
       healthEndpoint: '/health',
       activeSessions: Object.keys(transports).length,
     });
+  });
+
+  // Plain HTTP route for repeatable walkthrough demo reset (not an MCP tool)
+  app.post('/demo/reset', (_req: Request, res: Response) => {
+    try {
+      resetDemoData();
+      res.json({
+        success: true,
+        message: 'Demo data reset to the initial state.',
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: `Failed to reset demo data: ${err.message}`,
+      });
+    }
   });
 
   // Streamable HTTP POST handler

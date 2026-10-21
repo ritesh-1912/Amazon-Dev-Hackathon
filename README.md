@@ -194,7 +194,7 @@ Open **`http://localhost:3000`** in your browser to interact with the Alexa+ Web
 ```bash
 npm test
 ```
-All 24 test cases verify:
+All 25 test cases verify:
 - SQLite persistence and crash recovery
 - Dependency blocking and cascading unblocking
 - Human-in-the-loop action guards

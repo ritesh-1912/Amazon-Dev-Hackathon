@@ -182,6 +182,32 @@ export default function Home() {
     return newMsg;
   }, []);
 
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetDemo = useCallback(async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const res = await fetch('/api/demo/reset', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}: Failed to reset demo data`);
+      }
+      await refreshTasks();
+      addMessage({
+        role: 'assistant',
+        content: 'Demo data reset to the initial state.',
+      });
+    } catch (err: any) {
+      addMessage({
+        role: 'assistant',
+        content: `Failed to reset demo data: ${err.message}`,
+      });
+    } finally {
+      setResetting(false);
+    }
+  }, [resetting, refreshTasks, addMessage]);
+
   const handleSend = useCallback(async (customText?: string) => {
     const text = (customText ?? inputValue).trim();
     if (!text || isLoading) return;
@@ -523,6 +549,8 @@ export default function Home() {
         <TaskSidebar
           tasks={tasks}
           onRefresh={refreshTasks}
+          onResetDemo={handleResetDemo}
+          resetting={resetting}
           loading={tasksLoading}
           connectionError={connectionError}
           onSelectTask={(task) => {

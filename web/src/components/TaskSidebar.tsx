@@ -40,12 +40,16 @@ const categoryLabels: Record<string, string> = {
 export default function TaskSidebar({
   tasks,
   onRefresh,
+  onResetDemo,
+  resetting = false,
   loading,
   connectionError,
   onSelectTask,
 }: {
   tasks: Task[];
   onRefresh: () => void;
+  onResetDemo?: () => void;
+  resetting?: boolean;
   loading: boolean;
   connectionError?: string | null;
   onSelectTask?: (task: Task) => void;
@@ -68,27 +72,39 @@ export default function TaskSidebar({
               {tasks.length}
             </span>
           </div>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Refresh task list"
-          >
-            <svg
-              className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="flex items-center gap-2.5">
+            {onResetDemo && (
+              <button
+                onClick={onResetDemo}
+                disabled={resetting || loading}
+                className="text-[11px] text-zinc-400 hover:text-zinc-200 disabled:opacity-40 transition-colors cursor-pointer"
+                title="Reset demo data to initial state"
+              >
+                {resetting ? 'Resetting...' : 'Reset demo data'}
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={loading || resetting}
+              className="text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Refresh task list"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            <span className="font-mono">{loading ? 'Syncing' : 'Refresh'}</span>
-          </button>
+              <svg
+                className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span className="font-mono">{loading ? 'Syncing' : 'Refresh'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Status Counters */}

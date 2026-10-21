@@ -366,4 +366,51 @@ describe('Phase 2 — MCP Streamable HTTP Integration for Guarded Tools', () => 
       await client.close();
     }
   });
+
+  it('resets demo data via POST /demo/reset and restores original task statuses', async () => {
+    const address = server.address() as any;
+    const resetUrl = `http://127.0.0.1:${address.port}/demo/reset`;
+
+    // 1. Initial seed state via POST /demo/reset
+    const initRes = await fetch(resetUrl, { method: 'POST' });
+    expect(initRes.ok).toBe(true);
+
+    const initialDesign = getTask('task-cs301-design');
+    const initialImpl = getTask('task-cs301-impl');
+    expect(initialDesign?.status).toBe('open');
+    expect(initialImpl?.status).toBe('blocked');
+
+    // 2. Complete a task (task-cs301-design)
+    const confirmed = confirmAction(
+      'task-cs301-design',
+      'approve_specification',
+      true,
+      'Architecture specification signed off by mentor'
+    );
+    expect(confirmed.status).toBe('done');
+
+    // Confirm that task-cs301-design is done and task-cs301-impl is unblocked to open
+    const mutatedDesign = getTask('task-cs301-design');
+    const unblockedImpl = getTask('task-cs301-impl');
+    expect(mutatedDesign?.status).toBe('done');
+    expect(unblockedImpl?.status).toBe('open');
+
+    // 3. Reset demo data via POST /demo/reset
+    const resetRes = await fetch(resetUrl, { method: 'POST' });
+    expect(resetRes.ok).toBe(true);
+    const resetJson = await resetRes.json();
+    expect(resetJson.success).toBe(true);
+    expect(resetJson.message).toBe('Demo data reset to the initial state.');
+
+    // 4. Assert original statuses return
+    const restoredDesign = getTask('task-cs301-design');
+    const restoredImpl = getTask('task-cs301-impl');
+    const restoredQuiz = getTask('task-bio-quiz');
+    const restoredHealth = getTask('task-fee-health');
+
+    expect(restoredDesign?.status).toBe('open');
+    expect(restoredImpl?.status).toBe('blocked');
+    expect(restoredQuiz?.status).toBe('done');
+    expect(restoredHealth?.status).toBe('stale');
+  });
 });

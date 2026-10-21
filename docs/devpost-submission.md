@@ -95,7 +95,7 @@ Campus Ops MCP addresses these failure modes by tracking task blockers, explaini
 - **MCP Specification Compliance**: Implements the Model Context Protocol (MCP) Streamable HTTP specification (2025-11-25).
 - **Enforced Human-in-the-Loop Guard**: The server rejects any direct status change on `HUMAN_REQUIRED` tasks outside the `propose_action`/`confirm_action` flow.
 - **Deployment Configurations Included**: Contains a multi-stage Dockerfile, Render blueprint (`render.yaml`), Fly.io config (`fly.toml`), and Next.js deployment configuration for Vercel.
-- **Automated Test Suite**: 24 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
+- **Automated Test Suite**: 25 automated tests across 3 Vitest test suites covering CRUD operations, dependency resolution, guarded action invariant logic, Bedrock synthesis with fallback, and MCP Streamable HTTP session handling.
 
 ---
 

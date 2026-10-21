@@ -9,7 +9,7 @@ This document outlines how **Campus Ops MCP** integrates Amazon Web Services to 
 - **Service Name**: **Amazon Bedrock Runtime**
 - **Official SDK**: `@aws-sdk/client-bedrock-runtime` (v3)
 - **API Invoked**: `ConverseCommand` (Amazon Bedrock Unified Conversational Inference API)
-- **Foundation Model**: **Anthropic Claude Haiku 4.5** (Default: `global.anthropic.claude-haiku-4-5-20251001-v1:0`, configurable via `BEDROCK_MODEL_ID`)
+- **Foundation Model**: **Amazon Nova Lite** (Default: `amazon.nova-lite-v1:0`, configurable to any Converse-compatible Bedrock model via `BEDROCK_MODEL_ID`)
 - **Authentication**:
   - **Primary / Recommended**: `AWS_BEARER_TOKEN_BEDROCK` (Bedrock API bearer token; automatically resolved by `@aws-sdk/client-bedrock-runtime`)
   - **Documented Fallback**: `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` (standard IAM credentials)
@@ -40,7 +40,7 @@ In an academic operations system, the raw backend state is a complex relational 
 A voice interface like **Alexa+** cannot simply read out raw JSON or recite database rows without overwhelming the student with cognitive overhead.
 
 ### The Bedrock Solution
-Amazon Bedrock with Claude Haiku 4.5 acts as an **operational synthesizer**:
+Amazon Bedrock acts as an **operational synthesizer**:
 1. **Context Comprehension**: Ingests the structured JSON output of `get_weekly_brief()` containing upcoming deadlines, blockers, and required confirmations.
 2. **Calm Persona**: Enforces a calm, concise spoken-brief persona:
    > *"You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts."*

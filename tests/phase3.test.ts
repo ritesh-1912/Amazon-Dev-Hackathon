@@ -81,14 +81,14 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
       summary: { total_open: 2, due_in_7_days: 1, blocked: 1, stale: 0, human_required: 1 },
     };
 
-    const mockClaudeResponse =
+    const mockBedrockResponse =
       'Good morning. Calculus Problem Set 3 is due tomorrow. Your Project Submission remains blocked until the problem set is completed. No fee confirmations are pending today.';
 
     const mockClient = {
       send: vi.fn().mockResolvedValue({
         output: {
           message: {
-            content: [{ text: mockClaudeResponse }],
+            content: [{ text: mockBedrockResponse }],
           },
         },
       }),
@@ -96,10 +96,10 @@ describe('Phase 3 — AWS Bedrock Integration & Fallback', () => {
 
     const result = await generateSmartBrief(briefData, mockClient);
 
-    expect(result.source).toBe('aws_bedrock_claude');
-    expect(result.model).toBe('global.anthropic.claude-haiku-4-5-20251001-v1:0');
-    expect(DEFAULT_MODEL_ID).toBe('global.anthropic.claude-haiku-4-5-20251001-v1:0');
-    expect(result.brief).toBe(mockClaudeResponse);
+    expect(result.source).toBe('aws_bedrock');
+    expect(result.model).toBe('amazon.nova-lite-v1:0');
+    expect(DEFAULT_MODEL_ID).toBe('amazon.nova-lite-v1:0');
+    expect(result.brief).toBe(mockBedrockResponse);
     expect(result.structured_brief).toBeDefined();
     expect(mockClient.send).toHaveBeenCalledTimes(1);
   });

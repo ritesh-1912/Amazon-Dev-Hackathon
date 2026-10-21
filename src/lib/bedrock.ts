@@ -2,7 +2,7 @@ import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-r
 import type { WeeklyBrief } from '../types.js';
 
 export interface SmartBriefResult {
-  source: 'aws_bedrock_claude' | 'fallback_structured';
+  source: 'aws_bedrock' | 'fallback_structured';
   model: string;
   brief: string;
   structured_brief: WeeklyBrief;
@@ -11,7 +11,7 @@ export interface SmartBriefResult {
 
 export type BedrockAuthMethod = 'bearer token' | 'access key' | 'none';
 
-export const DEFAULT_MODEL_ID = 'global.anthropic.claude-haiku-4-5-20251001-v1:0';
+export const DEFAULT_MODEL_ID = 'amazon.nova-lite-v1:0';
 
 export const SYSTEM_PROMPT =
   "You are a calm household/academic ops assistant. Given this task state, write a 3-4 sentence spoken-style brief: what's due soon, what's blocked and why, what needs the student's confirmation. No filler, no enthusiasm, just the facts a person needs before their day starts.";
@@ -97,7 +97,7 @@ export function resetBedrockClient(): void {
 }
 
 /**
- * Generate a spoken-style academic operations brief using Claude on AWS Bedrock.
+ * Generate a spoken-style academic operations brief using Amazon Bedrock.
  * Gracefully falls back to structured brief if credentials or API calls fail.
  */
 export async function generateSmartBrief(
@@ -130,7 +130,7 @@ export async function generateSmartBrief(
   try {
     const client = clientOverride || getBedrockClient();
 
-    // Prepare task state payload for Claude
+    // Prepare task state payload for Bedrock Converse API
     const promptContent = `Current student academic ops state:\n${JSON.stringify(
       {
         tasks_due_soon: briefData.tasks_due_soon.map((t) => ({
@@ -181,11 +181,11 @@ export async function generateSmartBrief(
     const textOutput = messageContent?.[0]?.text;
 
     if (!textOutput) {
-      throw new Error('Empty response content received from Bedrock Claude model');
+      throw new Error('Empty response content received from Bedrock model');
     }
 
     return {
-      source: 'aws_bedrock_claude',
+      source: 'aws_bedrock',
       model: modelId,
       brief: textOutput.trim(),
       structured_brief: briefData,
@@ -196,7 +196,7 @@ export async function generateSmartBrief(
       ? err.message
       : `${errorName}: ${err.message}`;
     console.warn(
-      `[AWS Bedrock Warning] Failed to invoke Claude model on Bedrock (${errorDetails}). Falling back to structured brief.`
+      `[AWS Bedrock Warning] Failed to invoke model on Bedrock (${errorDetails}). Falling back to structured brief.`
     );
     return generateFallbackBrief(briefData, modelId, errorDetails);
   }

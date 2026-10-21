@@ -52,7 +52,7 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 |   +-- MCP Tool Registry (create_task, list_tasks, ...)      |
 |   +-- Dynamic State Invariant Engine (open/blocked/stale)   |
 |   +-- Guarded Action Gatekeeper (AUTO vs HUMAN_REQUIRED)    |
-|   +-- Bedrock AI Engine (Claude on AWS Bedrock)             |
+|   +-- Bedrock AI Engine (Amazon Bedrock)                    |
 +------------------------------+------------------------------+
                                |
                                v
@@ -80,7 +80,7 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 
 ## How AWS Bedrock Is Used (AWS Builder Challenge)
 
-Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Anthropic Claude Haiku 4.5 (`global.anthropic.claude-haiku-4-5-20251001-v1:0`) via the Converse API (`ConverseCommand`).
+Campus Ops MCP integrates the **AWS Bedrock Runtime SDK** (`@aws-sdk/client-bedrock-runtime`) using Amazon Nova Lite (`amazon.nova-lite-v1:0`) by default via the Converse API (`ConverseCommand`). Any Converse-compatible Bedrock model can be configured via `BEDROCK_MODEL_ID`.
 
 ### Features:
 1. **Intelligent Spoken Synthesis**: Aggregates the relational academic graph (due dates, blockers, and overdue items) and synthesizes a calm 3-4 sentence voice briefing.
@@ -132,7 +132,7 @@ interface Task {
 | `propose_action` | `task_id`, `action` | For `HUMAN_REQUIRED` tasks, returns `{ requires_confirmation: true, reason }` without mutating state. |
 | `confirm_action` | `task_id`, `action`, `confirmed`, `note` | Only tool capable of mutating `HUMAN_REQUIRED` tasks. Enforces invariant that blocked tasks cannot be confirmed. |
 | `get_weekly_brief` | *(none)* | Structured data aggregator of upcoming deadlines, blockers, and overdue tasks. |
-| `get_smart_brief` | *(none)* | Bedrock-powered conversational voice briefing synthesized by Claude. |
+| `get_smart_brief` | *(none)* | Bedrock-powered conversational voice briefing synthesized via AWS Bedrock. |
 
 ---
 
@@ -154,7 +154,7 @@ cd web && npm install && cd ..
 ```bash
 cp .env.example .env
 ```
-Optional: Add your AWS configuration to `.env` to enable live Bedrock Claude generation:
+Optional: Add your AWS configuration to `.env` to enable live Bedrock generation:
 ```ini
 # Required: your project's assigned region (no default fallback; e.g. ap-southeast-2 or us-east-1)
 AWS_REGION=ap-southeast-2
@@ -166,7 +166,7 @@ AWS_BEARER_TOKEN_BEDROCK=your_token
 AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
 
-BEDROCK_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0
+BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 ```
 *(If AWS credentials/bearer tokens are omitted, the system uses deterministic structured brief generation).*
 
@@ -198,7 +198,7 @@ All 22 test cases verify:
 - Dependency blocking and cascading unblocking
 - Human-in-the-loop action guards
 - Rejection of invalid status changes on `HUMAN_REQUIRED` tasks
-- AWS Bedrock Claude synthesis, bearer token detection, strict region enforcement, and graceful fallback
+- AWS Bedrock synthesis, bearer token detection, strict region enforcement, and graceful fallback
 - Full Streamable HTTP MCP JSON-RPC protocol round-trips
 
 ---
@@ -260,7 +260,7 @@ The repository includes a [`web/vercel.json`](web/vercel.json) configuration:
   - Invariant guard refusing advancement of blocked tasks.
   - `get_weekly_brief` structured aggregator.
 - **Phase 3: AWS Bedrock Integration (AWS Builder Challenge)** — Completed
-  - Bedrock Runtime SDK calling Claude on Bedrock.
+  - Bedrock Runtime SDK calling Bedrock Converse API.
   - `get_smart_brief` tool with deterministic fallback.
   - Architecture documentation in `docs/aws-builder.md`.
 - **Phase 4: Web Simulator (Alexa+ Experience)** — Completed

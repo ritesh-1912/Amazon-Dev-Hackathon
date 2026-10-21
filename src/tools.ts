@@ -318,7 +318,7 @@ export function registerTaskTools(server: McpServer): void {
   // 8. get_smart_brief (AI-powered spoken weekly brief via AWS Bedrock)
   server.tool(
     'get_smart_brief',
-    'Generate an AI-synthesized spoken-style brief using Claude on AWS Bedrock. Summarizes what is due soon, what is blocked and why, and what requires student confirmation.',
+    'Generate an AI-synthesized spoken-style brief using AWS Bedrock. Summarizes what is due soon, what is blocked and why, and what requires student confirmation.',
     {},
     async () => {
       try {

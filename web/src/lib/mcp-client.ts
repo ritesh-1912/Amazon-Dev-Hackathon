@@ -9,7 +9,7 @@ const MCP_SERVER_URL = rawClientUrl.replace(/\/+$/, '');
 interface McpToolCallResult {
   content: Array<{ type: string; text: string }>;
   isError?: boolean;
-  source?: 'aws_bedrock_claude' | 'fallback_structured' | string;
+  source?: 'aws_bedrock' | 'fallback_structured' | string;
   model?: string;
 }
 

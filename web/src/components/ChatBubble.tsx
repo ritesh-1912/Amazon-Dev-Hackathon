@@ -30,7 +30,7 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
             </span>
             {message.source && (
               <span className="text-[10px] font-mono text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
-                {message.source === 'aws_bedrock_claude'
+                {message.source === 'aws_bedrock'
                   ? 'via AWS Bedrock'
                   : message.source === 'fallback_structured'
                     ? 'offline fallback'

@@ -22,4 +22,4 @@ services:
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
       - key: BEDROCK_MODEL_ID
-        value: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        value: amazon.nova-lite-v1:0

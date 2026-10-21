@@ -245,7 +245,7 @@ export default function Home() {
         // Not a proposal JSON, proceed with normal format
       }
 
-      // Extract tool execution source if available (e.g. 'aws_bedrock_claude' vs 'fallback_structured')
+      // Extract tool execution source if available (e.g. 'aws_bedrock' vs 'fallback_structured')
       let toolSource = result?.source;
       if (!toolSource && intent.tool === 'get_smart_brief') {
         try {
@@ -380,7 +380,7 @@ export default function Home() {
                   Alexa+ Simulator
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500">Streamable HTTP MCP · AWS Bedrock (Claude) · SQLite</p>
+              <p className="text-[11px] text-zinc-500">Streamable HTTP MCP · AWS Bedrock · SQLite</p>
             </div>
           </div>
 

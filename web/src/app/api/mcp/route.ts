@@ -53,6 +53,9 @@ async function mcpRequest(
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => res.statusText);
+      if (res.status === 404 && mcpSessionId && errorText.includes('Session')) {
+        mcpSessionId = null;
+      }
       throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
     }
 
@@ -127,10 +130,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await ensureInitialized();
 
-    const response = await mcpRequest('tools/call', {
-      name: tool,
-      arguments: args || {},
-    }, undefined, 45000);
+    let response;
+    try {
+      response = await mcpRequest('tools/call', {
+        name: tool,
+        arguments: args || {},
+      }, undefined, 45000);
+    } catch (callErr: any) {
+      if (callErr?.message?.includes('Session') && callErr?.message?.includes('404')) {
+        // Session expired on server; re-initialize and retry once
+        mcpSessionId = null;
+        await ensureInitialized();
+        response = await mcpRequest('tools/call', {
+          name: tool,
+          arguments: args || {},
+        }, undefined, 45000);
+      } else {
+        throw callErr;
+      }
+    }
 
     if (response?.result) {
       return NextResponse.json({ result: response.result });

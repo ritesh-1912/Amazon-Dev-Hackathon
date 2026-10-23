@@ -172,6 +172,19 @@ export default function Home() {
     refreshTasks();
   }, [refreshTasks]);
 
+  // Periodic keep-alive ping every 5 minutes while tab is open to prevent backend cold start
+  useEffect(() => {
+    const keepAliveInterval = setInterval(() => {
+      fetch('/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool: 'list_tasks', args: {} }),
+      }).catch(() => {});
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(keepAliveInterval);
+  }, []);
+
   const addMessage = useCallback((msg: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMsg: ChatMessage = {
       ...msg,

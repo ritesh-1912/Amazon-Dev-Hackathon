@@ -75,6 +75,7 @@ Campus Ops MCP addresses these failures by enforcing dependency graph invariants
 | **Stateful Dependency Invariant** | Automatically computes whether tasks are `blocked` by unfinished prerequisites. The MCP server strictly refuses to advance blocked tasks. |
 | **Guarded Actions (`HUMAN_REQUIRED`)** | State mutations affecting money or academic submissions are classified as `HUMAN_REQUIRED`. The server exposes `propose_action` which returns `requires_confirmation: true`. The web simulator displays an interactive modal dialog: *"Confirm: mark [Task] as paid? [Confirm] [Cancel]"*. Only `confirm_action(confirmed: true)` mutates state. |
 | **Immutable Audit Trail** | Every action proposal, confirmation, rejection, and status transition is recorded in the SQLite audit log with ISO timestamps. |
+| **Repeatable Demo Walkthrough** | Because all visitors share the live demo database on Render, the Task Board header provides a "Reset demo data" button (calling `POST /demo/reset`) that restores the 8 clean initial tasks and resets the audit log at any time. |
 
 ---
 

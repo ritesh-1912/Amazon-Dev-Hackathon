@@ -1,0 +1,15 @@
+name: Render Backend Keepalive
+
+on:
+  schedule:
+    # Ping every 14 minutes to prevent Render free-tier instance from idling
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Campus Ops MCP Health Endpoint
+        run: |
+          curl -s -f -m 20 https://campus-ops-mcp-xlse.onrender.com/health || echo "Keepalive ping sent"

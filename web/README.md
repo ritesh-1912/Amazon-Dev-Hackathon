@@ -10,6 +10,7 @@ A Next.js (App Router) + TypeScript + Tailwind chat-style user interface that si
   - `offline fallback`: deterministic structured brief when Bedrock is unreachable, unconfigured, or awaiting model authorization.
 - **Guarded Action Confirmation Modal**: Enforces explicit human confirmation dialogs for `HUMAN_REQUIRED` actions (such as paying tuition fees or final project submissions).
 - **Live Task Board**: Sidebar tracking real-time status (`open`, `blocked`, `done`, `stale`) with live task counters and visual dependency indicators.
+- **Repeatable Walkthrough (Reset Demo Data)**: Header button calling `POST /api/demo/reset` to reset tasks and audit logs back to the initial 8 demo tasks so walkthroughs can be repeated on demand.
 - **Quick Workflow Steps**: One-click demo buttons modeling the core user story:
   1. **"What's due?"** — triggers `get_smart_brief`
   2. **"Check blocked"** — shows blocked tasks and prerequisites
